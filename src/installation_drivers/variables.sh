@@ -1,0 +1,2 @@
+. ./src/variables.sh
+

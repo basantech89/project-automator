@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+# Reserved codes = 1, 2, 126, 127, 128, 128+n, 130, 255\*
+SUCCESS=0
+INVALID_GRAPHICS_CARD=3
+PKG_NOT_EXISTS=4
+DIR_NOT_EXISTS=5
