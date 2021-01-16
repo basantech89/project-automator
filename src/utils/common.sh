@@ -50,8 +50,10 @@ install_pkg() {
   else
     if [ "${1}" = 'aur' ]; then
       yay -S "${1}" --answerdiff N --answerclean N --answeredit N --answerupgrade A --cleanafter --norebuild --noredownload --noconfirm
+    elif [ "${1}" = 'snap' ]; then
+      sudo snap install "${1}"
     else
-      sudo pacman -S "${1}" --noconfirm --overwrite '*'
+      sudo pacman -S "${1}" --needed --noconfirm --overwrite '*'
     fi
     [ $? -eq 0 ] && successful_pkgs+=("${1}") || failed_pkgs+=("${1}")
   fi

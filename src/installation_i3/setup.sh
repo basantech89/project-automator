@@ -4,11 +4,17 @@
 
 install_yay() {
   cd ~ || exit
+  is_pkg_installed fakeroot || install_pkgs pacman base-devel
   git clone https://aur.archlinux.org/yay.git
   cd yay || exit
   makepkg -si --noconfirm
   cd ~ || exit
   successful_pkgs+=('yay')
+}
+
+install_file_system_config() {
+  install_pkgs pacman mtpfs ntfs-3g pcmanfm
+  install_pkgs yay jmtpfs
 }
 
 install_i3() {
@@ -20,4 +26,5 @@ install_i3() {
   sudo systemctl enable lightdm.service -f
   sudo systemctl set-default graphical.target
   install_yay
+  install_file_system_config
 }

@@ -55,7 +55,7 @@ install_battery() {
 }
 
 install_audio() {
-	install_pkgs pacman pulseaudio pulseaudio-alsa alsa-utils
+	install_pkgs pacman pulseaudio pulseaudio-alsa alsa-utils vlc a52dec faac faad2 flac jasper lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 xvidcore gstreamer0.10-plugins
 	amixer sset Master unmute
 	amixer sset Speaker unmute
 	amixer sset Headphone unmute

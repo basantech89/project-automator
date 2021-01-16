@@ -4,7 +4,8 @@
 . ./src/installation_system/setup.sh
 . ./src/installation_i3/setup.sh
 . ./src/installation_drivers/setup.sh
-. ./src/installation_ricing.sh
+. ./src/installation_ricing/setup.sh
+. ./src/installation_devtools/setup.sh
 
 export successful_pkgs=()
 export failed_pkgs=()
@@ -33,12 +34,14 @@ main_menu() {
 		4)
 			install_ricing
 			;;
-		5) ;;
-
+		5)
+			install_devtools
+			;;
 		esac
 	done
 }
 
 main_menu
-echo "${successful_pkgs[@]}"
-echo "${failed_pkgs[@]}"
+print_info "${SUCCESS}" "Successfully Installed Packages ${successful_pkgs[*]}"
+print_info "${ERROR}" "Failed Packages ${failed_pkgs[*]}"
+print_info "${WARNING}" "Already Installed Packages ${already_installed_pkgs[*]}"
