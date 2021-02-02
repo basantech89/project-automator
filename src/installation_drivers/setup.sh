@@ -16,6 +16,7 @@ confirm_graphics_card() {
 }
 
 install_graphics() {
+	print_info "${SUCCESS}" "Installing Graphics"
 	declare -a pkgs=(xorg-server-devel)
 	lspci | grep -ie 'nvidia' >/dev/null
 	isNvidia=$?
@@ -47,6 +48,7 @@ EOF
 }
 
 install_battery() {
+	print_info "${SUCCESS}" "Installing Power Modules"
 	install_pkgs pacman tlp tlp-rdw
 	sudo systemctl enable tlp.service
 	sudo systemctl enable NetworkManager-dispatcher.service
@@ -55,6 +57,7 @@ install_battery() {
 }
 
 install_audio() {
+	print_info "${SUCCESS}" "Installing Audio"
 	install_pkgs pacman pulseaudio pulseaudio-alsa alsa-utils vlc a52dec faac faad2 flac jasper lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 xvidcore gstreamer0.10-plugins
 	amixer sset Master unmute
 	amixer sset Speaker unmute
@@ -62,6 +65,7 @@ install_audio() {
 }
 
 install_touchpad() {
+	print_info "${SUCCESS}" "Installing Touchpad"
 	install_pkgs pacman xf86-input-libinput
 	sudo tee -a /etc/X11/xorg.conf.d/40-libinput.conf >/dev/null <<EOF
 Section "InputClass"
@@ -82,8 +86,9 @@ EOF
 }
 
 install_bluetooth() {
+	print_info "${SUCCESS}" "Installing Bluetooth"
 	sudo rfkill unblock bluetooth
-	sudo pacman-key --refresh-keys
+	# sudo pacman-key --refresh-keys
 	install_pkgs pacman pulseaudio-bluetooth pulseaudio-alsa pavucontrol bluez bluez-utils blueman
 	sudo systemctl enable bluetooth
 	sudo systemctl start bluetooth
@@ -99,9 +104,11 @@ EOF
 }
 
 install_drivers() {
+	divider "START: System Drivers Installation"
 	install_graphics
 	install_battery
 	install_audio
 	install_touchpad
 	install_bluetooth
-}
+	divider "END: System Drivers Installation"
+} > >(tee -i installation_drivers.log) 2> >(tee -i installation_error_drivers.log >&2)

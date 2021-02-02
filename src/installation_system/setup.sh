@@ -22,8 +22,8 @@ prepare_system_installation() {
   print_info "${WARNING}" "Before running this script, make sure you have created and formatted your disk"
   print_info "${WARNING}" "and mounted the root partition in /mnt"
   prompt_installation_variables
-  divider "Starting Installation"
 
+  divider "Starting Installation"
   if [ "${installation_mode}" = "Online" ]; then
     sed -i "/#\[multilib\]/{n;s/#//}" /etc/pacman.conf
     sed -i "/#\[multilib\]/ s/#//" /etc/pacman.conf
@@ -40,4 +40,4 @@ prepare_system_installation() {
   cp prepare_system_installation.log prepare_system_installation_error.log /mnt
   umount /mnt
   reboot now
-} > >(tee -i prepare_system_installation.log) 2> >(tee -i prepare_system_installation_error.log >&2)
+} > >(tee -i installation_prepare_system.log) 2> >(tee -i installation_error_prepare_system.log >&2)

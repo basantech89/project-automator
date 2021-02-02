@@ -3,6 +3,7 @@
 . ./src/variables.sh
 
 install_oh_my_zsh() {
+	print_info "${SUCCESS}" "Installing Oh-My-ZSH"
 	cd ~ || exit "${DIR_NOT_EXISTS}"
 	sh -c "$(wget -O- https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
 	git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k
@@ -14,6 +15,7 @@ install_oh_my_zsh() {
 }
 
 install_fonts() {
+	print_info "${SUCCESS}" "Installing Fonts"
 	install_pkgs pacman nerd-fonts-terminus ttf-dejavu ttf-liberation noto-fonts noto-fonts-emoji
 	install_pkgs aur powerline-fonts-git
 	sudo tee -a /etc/X11/xorg.conf.d/40-libinput.conf >/dev/null <<EOF
@@ -78,6 +80,7 @@ EOF
 }
 
 install_tools() {
+	print_info "${SUCCESS}" "Installing Tools"
 	install_pkgs aur st-luke-git libxft-bgra
 	install_pkgs pacman lsd flameshot dunst
 	# LSD
@@ -104,16 +107,26 @@ EOF
 	sudo systemctl start snapd
 	install_pkgs snap mailspring
 	install_pkgs pacman gnome-keyring
+	#docker
+	sudo tee /etc/modules-load.d/loop.conf <<<"loop" # enable the loop module
+	modprobe loop
+	sudo pacman -S docker
+	sudo systemctl start docker.service
+	sudo systemctl enable docker.service
+	sudo groupadd docker
+	sudo usermod -aG docker "${USER}"
 	# misc
 	install_pkgs aur polybar
 	install_pkgs pacman openssh gdisk rofi feh ranger w3m imagemagick python-pip python-pywal p7zip p7zip-plugins unrar tar rsync
 }
 
 install_ricing() {
+	divider "START: Ricing Installation"
 	git clone https://github.com/basantech89/arch-ricing ~/arch-ricing
 	cd ~/arch-ricing || exit
 	cp -r * ../
 	install_oh_my_zsh
 	install_fonts
 	install_tools
-}
+	divider "END: Ricing Installation"
+} > >(tee -i installation_ricing.log) 2> >(tee -i installation_error_ricing.log >&2)
