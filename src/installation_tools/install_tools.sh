@@ -37,7 +37,7 @@ tools_menu() {
         case $choice in
         1)
             print_info "${INFO}" "Installing I3 Window Manager"
-            # install_i3
+            install_i3
             ;;
         2)
             print_info "${INFO}" "Installing System Drivers"
