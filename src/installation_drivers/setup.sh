@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-. ./src/utils/common.sh
+. "${HOME}"/project_automator/src/utils/common.sh
 
 confirm_graphics_card() {
 	if [ "${1}" -eq 0 ]; then
@@ -8,7 +8,7 @@ confirm_graphics_card() {
 	else
 		print_info "${INFO}" "Intel graphics is detected"
 	fi
-	print_info "${PRIMARY}" "Press y|Y if this is correct. Press any other key if it's incorrect"
+	print_info "${PROMPT}" "Press y|Y if this is correct. Press any other key if it's incorrect"
 	read -r response
 	if [ "${response}" != 'Y' -a "${response}" != 'y' ]; then
 		exit "${INVALID_GRAPHICS_CARD}"
@@ -16,7 +16,7 @@ confirm_graphics_card() {
 }
 
 install_graphics() {
-	print_info "${SUCCESS}" "Installing Graphics"
+	print_info "${INFO}" "Installing Graphics"
 	declare -a pkgs=(xorg-server-devel)
 	lspci | grep -ie 'nvidia' >/dev/null
 	isNvidia=$?
@@ -28,9 +28,10 @@ install_graphics() {
 	confirm_graphics_card "${isNvidia}"
 	install_pkgs pacman "${pkgs[@]}"
 	if [ "${isNvidia}" -eq 0 ]; then
-		echo 'blacklist nouveau' | sudo tee -a /usr/lib/modprobe.d/nvidia.conf
-		echo 'sudo nvidia-smi' >>post_setup.sh
+		echo 'blacklist nouveau' | sudo tee -a /usr/lib/modprobe.d/nvidia.conf >/dev/null
+		echo 'sudo nvidia-smi' | sudo tee -a ~/post_setup.sh >/dev/null
 		install_pkgs aur optimus-manager optimus-manager-qt
+		sudo systemctl start optimus-manager
 		sudo optimus-manager --switch hybrid
 		sudo usermod -a -G video "${USER}"
 		cat >>~/.config/i3/config <<EOF
@@ -88,7 +89,7 @@ EOF
 install_bluetooth() {
 	print_info "${SUCCESS}" "Installing Bluetooth"
 	sudo rfkill unblock bluetooth
-	# sudo pacman-key --refresh-keys
+	sudo pacman-key --refresh-keys
 	install_pkgs pacman pulseaudio-bluetooth pulseaudio-alsa pavucontrol bluez bluez-utils blueman
 	sudo systemctl enable bluetooth
 	sudo systemctl start bluetooth
@@ -97,7 +98,7 @@ AutoEnable=true
 EOF
 	mkdir -p ~/.config/pulse
 	sudo cp /etc/pulse/* ~/.config/pulse/
-	cat >>~/.config/pulse/default.pa <<EOF
+	sudo tee -a ~/.config/pulse/default.pa >/dev/null <<EOF
 load-module module-switch-on-connect
 EOF
 	sudo systemctl restart bluetooth
@@ -111,4 +112,4 @@ install_drivers() {
 	install_touchpad
 	install_bluetooth
 	divider "END: System Drivers Installation"
-} > >(tee -i installation_drivers.log) 2> >(tee -i installation_error_drivers.log >&2)
+} > >(sudo tee -i installation_drivers.log) 2> >(sudo tee -i installation_error_drivers.log >&2)

@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 # Set/Reset
 RESET='0'
 BOLD='1'
@@ -7,13 +9,12 @@ BLINK='5'
 HIGHLIGHT='7'
 HIDDEN='8'
 
-
 # MODE
 FG='\033[38'
 BG='\033[48;2'
 
 # COLORS
-NC='\033[0m'    #NoColor
+NC='\033[0m' #NoColor
 WHITE='255;255;255'
 BLACK='0;0;0'
 GREEN='0;255;0'
@@ -39,7 +40,7 @@ SUBTITLE="${BG};${ROSE}m${FG};${DIM};${DENIM}m"
 ERROR="${BG};${RUBY}m${FG};${BOLD};${WHITE}m"
 BGSUCCESS="${BG};${GREEN}m${FG};${BOLD};${ALICE}m"
 SUCCESS="${FG};${DIM};${GREEN}m"
-PRIMARY="${BG};${ALICE}m${FG};${BOLD};${WHITE}m"
+PROMPT="${BG};${ALICE}m${FG};${BOLD};${WHITE}m"
 BGWARNING="${BG};${HUNTER}m${FG};${DIM};${SAPHIRE}m"
 WARNING="${FG};${DIM};${HUNTER}m"
 SECONDARY="${BG};${JUNGLE}m${FG};${DIM};${SPACE}m"

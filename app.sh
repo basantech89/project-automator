@@ -1,16 +1,22 @@
 #!/usr/bin/env bash
 
-./src/variables.sh
+. ./src/variables.sh
 . ./src/utils/common.sh
-. ./src/utils/helper.sh
 . ./src/installation_system/setup.sh
 . ./src/installation_tools/setup.sh
 
 show_summary() {
-	PKGS_FILE="/home/${new_username}/packages.log"
+	if [ -n "${new_username}" ]; then
+		PKGS_FILE="/home/${new_username}/tools_packages.log"
+	elif [ -n "${username}" ]; then
+		PKGS_FILE="/home/${username}/tools_packages.log"
+	else
+		PKGS_FILE="${HOME}/tools_packages.log"
+	fi
+
 	if [ -f "${PKGS_FILE}" ]; then
 		successfull=$(grep -i "successfully installed packages:" "${PKGS_FILE}" | sed 's/^.*Packages: //')
-		failed=$(grep -i "failed installed packages:" "${PKGS_FILE}" | sed 's/^.*Packages: //')
+		failed=$(grep -i "failed packages:" "${PKGS_FILE}" | sed 's/^.*Packages: //')
 		already_installed=$(grep -i "already installed packages:" "${PKGS_FILE}" | sed 's/^.*Packages: //')
 		successful_pkgs+=("${successfull[*]}")
 		failed_pkgs+=("${failed[*]}")
@@ -25,10 +31,13 @@ show_summary() {
 		print_info "${SUCCESS}" "Successfully Installed Packages: ${successful_pkgs[*]}"
 		print_info "${ERROR}" "Failed Packages: ${failed_pkgs[*]}"
 		print_info "${WARNING}" "Already Installed Packages: ${already_installed_pkgs[*]}"
-	} >>~/packages.log
+	} >>~/project_automator/packages.log
 }
 
 main_menu() {
+	cd ~ || exit "${HOME_DIR_NOT_EXIST}"
+	sudo pacman -Sy
+	# select_mirror
 	install_pkgs pacman dialog sudo
 	cmd=(dialog --separate-output --checklist "Select options:" 22 76 16)
 	options=(1 "Install Arch Linux" off # any option can be set to default to "on"

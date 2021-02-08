@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 
-. ./src/variables.sh
-. ./src/installation_i3/setup.sh
-. ./src/installation_drivers/setup.sh
-. ./src/installation_ricing/setup.sh
-. ./src/installation_devtools/setup.sh
+. ~/project_automator/src/installation_i3/setup.sh
+. ~/project_automator/src/installation_drivers/setup.sh
+. ~/project_automator/src/variables.sh
+. ~/project_automator/src/installation_ricing/setup.sh
+. ~/project_automator/src/installation_devtools/setup.sh
 
 install_basic_tools() {
-    install_pkgs pacman wget vim wpa_supplicant git
+    install_pkgs pacman wget vim wpa_supplicant git networkmanager
+    git config --global core.autocrlf input
+    git config --global core.editor vim
     if ! command -v yay &>/dev/null; then
         print_info "${INFO}" "Installing YAY Aur Helper"
         cd ~ || exit
@@ -15,6 +17,7 @@ install_basic_tools() {
         git clone https://aur.archlinux.org/yay.git
         cd yay || exit
         makepkg -si --noconfirm
+        rm -rf yay
         cd ~ || exit
         successful_pkgs+=('yay')
     else
@@ -61,4 +64,4 @@ tools_menu
     print_info "${SUCCESS}" "Successfully Installed Packages: ${successful_pkgs[*]}"
     print_info "${ERROR}" "Failed Packages: ${failed_pkgs[*]}"
     print_info "${WARNING}" "Already Installed Packages: ${already_installed_pkgs[*]}"
-} >>~/packages.log
+} >>~/tools_packages.log

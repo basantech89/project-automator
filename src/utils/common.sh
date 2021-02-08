@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 
-. ./src/assets/colors.sh
-. ./src/variables.sh
+. ~/project_automator/src/assets/colors.sh
+. ~/project_automator/src/variables.sh
 
 prompt_variable() {
 	arg="${1}"
-	print_info "${INFO}" "Please type ${arg} ${NC}"
+	print_info "${PROMPT}" "Please type ${arg} ${NC}"
 	read -r prompt_result
 	print_info "${INFO}" "You provided ${prompt_result} as the input."
-	print_info "${INFO}" "Press y|Y if this is correct. Press any other key to try again"
+	print_info "${PROMPT}" "Press y|Y if this is correct. Press any other key to try again"
 }
 
 set_variable() {
@@ -38,8 +38,13 @@ is_pkg_installed() {
 		print_info "${INFO}" "Package ${1} is already installed, not installing again"
 		return "${RESOLVED}"
 	else
-		print_info "${INFO}" "Installing Package ${1}"
-		return "${PKG_NOT_EXISTS}"
+		if which "${1}"; then
+			print_info "${INFO}" "Package ${1} is already installed, not installing again"
+			return "${RESOLVED}"
+		else
+			print_info "${INFO}" "Installing Package ${1}"
+			return "${PKG_NOT_EXISTS}"
+		fi
 	fi
 }
 
@@ -64,6 +69,19 @@ install_pkgs() {
 	for pkg in "${@}"; do
 		install_pkg "${PKG_MANAGER}" "${pkg}"
 	done
+}
+
+update_shell() {
+	if [ -f /bin/zsh ]; then
+		user_shell="/bin/zsh"
+	elif [ -f /usr/bin/zsh ]; then
+		user_shell="/usr/bin/zsh"
+	elif [ -f /bin/bash ]; then
+		user_shell="/bin/bash"
+	else
+		user_shell="/usr/bin/bash"
+	fi
+	export user_shell
 }
 
 update_system() {

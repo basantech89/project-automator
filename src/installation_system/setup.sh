@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-. ./src/utils/common.sh
-. ./src/installation_system/variables.sh
+. ~/project_automator/src/utils/common.sh
+. ~/project_automator/src/installation_system/variables.sh
 
 prompt_installation_variables() {
   set_uefi_mode
@@ -18,6 +18,17 @@ prompt_installation_variables() {
   show_info
 }
 
+select_mirror() {
+  print_info "${INFO}" "Selecting fastest mirrors"
+  pacman -Syy --noconfirm >/dev/null
+  install_pkgs pacman reflector
+  reflector -f 12 -l 10 -n 12 --save ./mirrorlist
+  cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.orig
+  cp ./mirrorlist /etc/pacman.d/mirrorlist
+  cp ./mirrorlist "${HOME}/project_automator/"
+  cp ./mirrorlist /mnt
+}
+
 prepare_system_installation() {
   print_info "${WARNING}" "Before running this script, make sure you have created and formatted your disk"
   print_info "${WARNING}" "and mounted the root partition in /mnt"
@@ -27,17 +38,18 @@ prepare_system_installation() {
   if [ "${installation_mode}" = "Online" ]; then
     sed -i "/#\[multilib\]/{n;s/#//}" /etc/pacman.conf
     sed -i "/#\[multilib\]/ s/#//" /etc/pacman.conf
-    #  select_mirror
+    successful_pkgs+=('base' 'base-devel' 'linux' 'linux-firmware vim sudo')
     pacstrap /mnt base base-devel linux linux-firmware vim sudo
   else
+    print_info "${BGINFO}" "Copying ROOT file system for offline installation"
     cp -ax / /mnt # The option (-x) excludes some special directories, as they should not be copied to the new root.
     # copy the kernel image to the new root, in order to keep the integrity of the new system
-    cp -vaT /run/archiso/bootmnt/arch/boot/$(uname -m)/vmlinuz /mnt/boot/vmlinuz-linux
+    cp -vaT /run/archiso/bootmnt/arch/boot/$(uname -m)/vmlinuz-linux /mnt/boot/vmlinuz-linux
   fi
-  cp ./src/installation_system/chroot_setup.sh /mnt
+  cp -r "${HOME}"/project_automator /mnt/root
   genfstab -U -p /mnt >>/mnt/etc/fstab
-  arch-chroot /mnt ./chroot_setup.sh
-  cp prepare_system_installation.log prepare_system_installation_error.log /mnt
+  print_info "${BGINFO}" "CHROOTing to the system"
+  arch-chroot /mnt "${HOME}"/project_automator/src/installation_system/chroot_setup.sh
   umount /mnt
   reboot now
-} > >(tee -i installation_prepare_system.log) 2> >(tee -i installation_error_prepare_system.log >&2)
+} > >(tee -i /mnt/installation_prepare_system.log) 2> >(tee -i /mnt/installation_error_prepare_system.log >&2)

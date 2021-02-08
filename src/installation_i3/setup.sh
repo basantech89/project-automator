@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-. ./src/utils/common.sh
+. ~/project_automator/src/utils/common.sh
 
 install_file_system_config() {
   install_pkgs pacman mtpfs ntfs-3g pcmanfm
@@ -19,4 +19,4 @@ install_i3() {
   sudo systemctl set-default graphical.target
   install_file_system_config
   divider "END: I3 Window Manager Installation"
-} > >(sudo tee -i installation_i3.log) 2> >(sudo tee -i installation_error_i3.log >&2)
+} > >(sudo tee -i ~/project_automator/installation_i3.log) 2> >(sudo tee -i ~/project_automator/installation_error_i3.log >&2)

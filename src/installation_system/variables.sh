@@ -8,7 +8,7 @@ set_uefi_mode() {
     export UEFI_ENABLED='no'
     print_info "${INFO}" "Legacy mode is detected"
   fi
-  print_info "${INFO}" "Press y|Y if this is correct. Press any other key if it's incorrect"
+  print_info "${PROMPT}" "Press y|Y if this is correct. Press any other key if it's incorrect"
   read -r response
   if [ "${response}" != 'Y' -a "${response}" != 'y' ]; then
     if [ "${UEFI_ENABLED}" = 'yes' ]; then
@@ -20,10 +20,10 @@ set_uefi_mode() {
 }
 
 prompt_root_partition() {
-  print_info "${INFO}" "Please type the root partition ${NC}"
+  print_info "${PROMPT}" "Please type the root partition ${NC}"
   read -r root_fs
   print_info "${INFO}" "You provided ${root_fs} as the input. /dev/${root_fs} would be your Root partition."
-  print_info "${INFO}" "Press y|Y if this is correct. Press any other key to try again"
+  print_info "${PROMPT}" "Press y|Y if this is correct. Press any other key to try again"
 }
 
 get_root_partition() {
@@ -36,7 +36,7 @@ get_root_partition() {
         export ROOT="${PARTITION}"
       else
         print_info "${ERROR}" "Partition /dev/${root_fs} not found. Exiting."
-        exit 1
+        exit "${PARTITION_NOT_FOUND}"
       fi
       break
       ;;
@@ -46,7 +46,7 @@ get_root_partition() {
 }
 
 select_installation_mode() {
-  print_info "${INFO}" "Please select installation mode.  ${NC}"
+  print_info "${PROMPT}" "Please select installation mode.  ${NC}"
   modes=("Online" "Offline")
   select mode in "${modes[@]}"; do
     case $mode in
@@ -73,15 +73,15 @@ mount_root_partition() {
 
 show_info() {
   if [ "${UEFI_ENABLED}" = 'yes' ]; then
-    print_info "${SUCCESS}" 'UEFI mode is detected'
-    print_info "${SUCCESS}" "Your EFI partition is ${efi_partition}"
+    print_info "${BGINFO}" 'UEFI mode is detected'
+    print_info "${BGINFO}" "Your EFI partition is ${efi_partition}"
   else
-    print_info "${SUCCESS}" 'Legacy mode is detected'
-    print_info "${SUCCESS}" "Your disk is ${disk}"
+    print_info "${BGINFO}" 'Legacy mode is detected'
+    print_info "${BGINFO}" "Your disk is ${disk}"
   fi
-  print_info "${SUCCESS}" "Your hostname is ${hostname}"
-  print_info "${SUCCESS}" "Your root password is ${root_password}"
-  print_info "${SUCCESS}" "Your new user account user name is ${new_username}"
-  print_info "${SUCCESS}" "Your new user account user password is ${new_user_password}"
-  print_info "${SUCCESS}" "Your installation mode is ${installation_mode}"
+  print_info "${BGINFO}" "Your hostname is ${hostname}"
+  print_info "${BGINFO}" "Your root password is ${root_password}"
+  print_info "${BGINFO}" "Your new user account user name is ${new_username}"
+  print_info "${BGINFO}" "Your new user account user password is ${new_user_password}"
+  print_info "${BGINFO}" "Your installation mode is ${installation_mode}"
 }
