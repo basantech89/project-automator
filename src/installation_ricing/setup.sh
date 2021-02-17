@@ -6,14 +6,13 @@
 install_oh_my_zsh() {
 	print_info "${INFO}" "Installing Oh-My-ZSH"
 	cd ~ || exit "${DIR_NOT_EXISTS}"
-	update_shell
 	# test -f /usr/bin/zsh && user_shell="/usr/bin/zsh" || test -f /bin/zsh && user_shell="/bin/zsh" || test -f /usr/bin/bash && user_shell="/usr/bin/bash" || user_shell="/bin/bash"
 	is_pkg_installed zsh && already_installed_pkgs+=('zsh') || {
 		install_pkgs pacman zsh
-		sudo usermod -s "${user_shell}" "${USER}"
 	}
 	[[ $(echo "${SHELL}") =~ "bash" ]] && {
 		print_info "${INFO}" "Bash is detected as your default shell, changing it to ZSH"
+		update_shell
 		sudo usermod -s "${user_shell}" "${USER}"
 	}
 	test -d ~/.oh-my-zsh && {
@@ -36,7 +35,7 @@ install_oh_my_zsh() {
 
 install_fonts() {
 	print_info "${SUCCESS}" "Installing Fonts"
-	install_pkgs pacman ttf-dejavu ttf-liberation noto-fonts noto-fonts-emoji
+	install_pkgs pacman ttf-dejavu ttf-liberation noto-fonts noto-fonts-emoji noto-fonts-extra
 	install_pkgs aur nerd-fonts-terminus powerline-fonts-git
 	test -f ~/.config/fontconfig/fonts.conf || {
 		sudo mkdir ~/.config/fontconfig
@@ -104,8 +103,11 @@ EOF
 
 install_tools() {
 	print_info "${SUCCESS}" "Installing Tools"
-	install_pkgs aur st-luke-git libxft-bgra
-	install_pkgs pacman lsd flameshot dunst
+	install_pkgs aur st-luke-git
+	print_info "${INFO}" "Installing Package libxft-bgra"
+	yay -S libxft-bgra --answerdiff N --answerclean A --answeredit N --answerupgrade A --cleanafter --norebuild --noredownload
+	[ $? -eq 0 ] && successful_pkgs+=("libxft-bgra") || failed_pkgs+=("libxft-bgra")
+	install_pkgs pacman lsd flameshot dunst libnotify
 	# LSD
 	cat >>~/.zshrc <<EOF
 	# ls aliases
@@ -127,7 +129,7 @@ EOF
 	sudo systemctl enable --user dunst.service
 	sudo systemctl start --user dunst.service
 	# ranger
-	install_pkgs pacman ranger atool ffmpegthumbnailer highlight libcaca mediainfo odt2txt poppler python-chardet transmission-cli ueberzug w3m
+	install_pkgs pacman ranger atool ffmpegthumbnailer highlight libcaca mediainfo odt2txt poppler poppler-data python-chardet transmission-cli ueberzug w3m
 	# imagemagick
 	install_pkgs pacman imagemagick ghostscript libwmf ocl-icd
 	# bash-insulter
@@ -139,9 +141,9 @@ if [ -f /etc/bash.command-not-found ]; then
 fi
 EOF
 	# vim
-	git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim
+	sudo git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim
 	# misc
-	install_pkgs pacman openssh gdisk rofi feh jpegexiforient imagemagick python-pip python-pywal nitrogen python2 p7zip p7zip-plugins unrar tar rsync bash-completion
+	install_pkgs pacman openssh gdisk rofi feh jpegexiforient imagemagick python-pip python-pywal nitrogen python2 p7zip lrzip unrar tar rsync bash-completion
 	cat >>~/.zshrc <<EOF
 	# git aliases
 alias gs='git status'
@@ -154,28 +156,40 @@ EOF
 	# polybar
 	install_pkgs pacman xorg-fonts-misc
 	install_pkgs aur ttf-unifont siji-git polybar
+	# xrandr
+	monitor=$(xrandr | awk '$2 == "connected"{print $1}')
+	sed -i "/xrandr --output eDP-1/ s/eDP-1/${monitor}/" ~/.config/i3/config
+	sed -i "/monitor = \"eDP-1\"/ s/eDP-1/${monitor}/" ~/.config/polybar/config
 	# snap
-	install_pkgs aur snapd
-	sudo systemctl start snapd
-	install_pkgs snap mailspring
-	install_pkgs pacman gnome-keyring
+	# install_pkgs aur snapd
+	# sudo systemctl start snapd
+	# install_pkgs snap mailspring
+	# install_pkgs pacman gnome-keyring
 	# docker
-	sudo tee /etc/modules-load.d/loop.conf <<<"loop" # enable the loop module
-	modprobe loop
-	sudo pacman -S docker
-	sudo systemctl start docker.service
-	sudo systemctl enable docker.service
-	sudo groupadd docker
-	sudo usermod -aG docker "${USER}"
+	# sudo tee /etc/modules-load.d/loop.conf <<<"loop" # enable the loop module
+	# modprobe loop
+	# sudo pacman -S docker
+	# sudo systemctl start docker.service
+	# sudo systemctl enable docker.service
+	# sudo groupadd docker
+	# sudo usermod -aG docker "${USER}"
 }
 
 install_ricing() {
 	divider "START: Ricing Installation"
+	install_pkgs pacman dos2unix
 	git clone https://github.com/basantech89/arch-ricing ~/arch-ricing
-	cd ~ || exit "${HOME_DIR_NOT_EXIST}"
-	sudo cp -r arch-ricing ./
+	cd ~/arch-ricing || exit "${DIR_NOT_EXISTS}"
+	find . -type f -not -path '*/\.git/*' ! -name '*.jpg' -print0 | xargs -0 dos2unix -f
+	sudo rm -rf .git
+	sudo rm -f .gitignore
+	sudo rm -f .gitconfig
+	cd .. || exit "${HOME_DIR_NOT_EXIST}"
+	sudo cp -r ~/arch-ricing/. ~/
 	install_oh_my_zsh
 	install_fonts
 	install_tools
+	sudo chown -R "${USER}" /home/"${USER}"
+	sudo chmod u+rw -R /home/"${USER}"
 	divider "END: Ricing Installation"
 } > >(sudo tee -i ~/project_automator/installation_ricing.log) 2> >(sudo tee -i ~/project_automator/installation_error_ricing.log >&2)

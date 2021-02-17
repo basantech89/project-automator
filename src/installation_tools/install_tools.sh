@@ -8,7 +8,6 @@
 
 install_basic_tools() {
     install_pkgs pacman wget vim wpa_supplicant git networkmanager
-    git config --global core.autocrlf input
     git config --global core.editor vim
     if ! command -v yay &>/dev/null; then
         print_info "${INFO}" "Installing YAY Aur Helper"

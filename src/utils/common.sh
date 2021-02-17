@@ -38,7 +38,7 @@ is_pkg_installed() {
 		print_info "${INFO}" "Package ${1} is already installed, not installing again"
 		return "${RESOLVED}"
 	else
-		if which "${1}"; then
+		if which "${1}" &>/dev/null; then
 			print_info "${INFO}" "Package ${1} is already installed, not installing again"
 			return "${RESOLVED}"
 		else
@@ -53,7 +53,7 @@ install_pkg() {
 		already_installed_pkgs+=("${2}")
 	else
 		if [ "${1}" = 'aur' ]; then
-			yay -S "${2}" --answerdiff N --answerclean N --answeredit N --answerupgrade A --cleanafter --norebuild --noredownload --noconfirm
+			yay -S "${2}" --answerdiff N --answerclean A --answeredit N --answerupgrade A --cleanafter --norebuild --noredownload --noconfirm
 		elif [ "${1}" = 'snap' ]; then
 			sudo snap install "${2}"
 		else
