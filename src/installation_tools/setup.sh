@@ -10,8 +10,8 @@ prepare_tools_installation() {
         select item in "${options[@]}"; do
             case "${REPLY}" in
             1)
-                set_variable new_username
-                set_variable new_user_password
+                set_variable "New Username" new_username
+                set_variable "New User Password" new_user_password
                 update_shell
                 # [ -f /usr/bin/zsh ] && USER_SHELL="/usr/bin/zsh" || USER_SHELL="/usr/bin/bash"
                 useradd -mg users -G wheel,storage,power -s "${user_shell}" "${new_username}"
@@ -20,7 +20,7 @@ prepare_tools_installation() {
                 sudo -u "${new_username}" "${HOME}"/project_automator/src/installation_tools/install_tools.sh
                 ;;
             2)
-                set_variable username
+                set_variable "Username" username
                 sudo -u "${username}" "${HOME}"/project_automator/src/installation_tools/install_tools.sh
                 ;;
             *)

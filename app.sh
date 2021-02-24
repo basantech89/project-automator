@@ -35,8 +35,11 @@ show_summary() {
 }
 
 main_menu() {
+	# if [ "${EUID}" -ne 0 ]; then
+	# 	set_variable "${USER}'s Password" user_password
+	# fi
 	cd ~ || exit "${HOME_DIR_NOT_EXIST}"
-	sudo pacman -Sy
+	update_system
 	# select_mirror
 	install_pkgs pacman dialog sudo
 	cmd=(dialog --separate-output --checklist "Select options:" 22 76 16)

@@ -22,12 +22,15 @@ install_oh_my_zsh() {
 		# sudo cp -r ~/.oh-my-zsh ~/.oh-my-zsh.backup-"$(date +"%Y-%m-%d")"
 		# rm -rf ~/.oh-my-zsh
 	} || {
+		# autojump
+		install_pkgs aur autojump
+		sudo sed -i '$ . /usr/share/autojump/autojump.zsh' ~/.zshrc
 		sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
 		git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k
 		git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
 		git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
 		sed -i "/ZSH_THEME=\"robbyrussell\"/ s/robbyrussell/powerlevel10k\/powerlevel10k/" ~/.zshrc
-		sed -i "/plugins=(git)/ a\\\tarchlinux\n\tgit\n\thistory-substring-search\n\tcolored-man-pages\n\tzsh-autosuggestions\n\tzsh-syntax-highlighting\n)" ~/.zshrc
+		sed -i "/plugins=(git)/ a\\\tarchlinux\n\tgit\n\thistory-substring-search\n\tcolored-man-pages\n\tzsh-autosuggestions\n\tzsh-syntax-highlighting\n\tautojump\n\tgitignore\n\tnpm\n\tsudo\n\tsystemadmin\n\tyarn\n\tweb-search\n\ttransfer\n)" ~/.zshrc
 		sed -i "/plugins=(git)/ s/git)//" ~/.zshrc
 		successful_pkgs+=('oh-my-zsh')
 	}
@@ -35,8 +38,11 @@ install_oh_my_zsh() {
 
 install_fonts() {
 	print_info "${SUCCESS}" "Installing Fonts"
-	install_pkgs pacman ttf-dejavu ttf-liberation noto-fonts noto-fonts-emoji noto-fonts-extra
-	install_pkgs aur nerd-fonts-terminus powerline-fonts-git
+	install_pkgs pacman ttf-dejavu ttf-liberation noto-fonts noto-fonts-emoji noto-fonts-extra ttf-font-awesome
+	install_pkgs aur nerd-fonts-terminus powerline-fonts-git nerd-fonts-dejavu-complete nerd-fonts-space-mono
+	sudo mkdir -p /usr/local/share/fonts
+	sudo cp -r ~/fonts/* /usr/local/share/fonts
+	sudo fc-cache -f
 	test -f ~/.config/fontconfig/fonts.conf || {
 		sudo mkdir ~/.config/fontconfig
 		sudo tee -a ~/.config/fontconfig/fonts.conf >/dev/null <<EOF
@@ -103,20 +109,31 @@ EOF
 
 install_tools() {
 	print_info "${SUCCESS}" "Installing Tools"
+	cat >>~/project_automator/post_run.sh <<EOF
+# xrandr
+monitor=\$(xrandr | awk '\$2 == "connected"{print \$1}')
+sed -i "/xrandr --output eDP1/ s/eDP1/\${monitor}/" ~/.config/i3/config
+sed -i "/monitor = \"eDP-1\"/ s/eDP-1/\${monitor}/" ~/.config/polybar/config
+# misc
+libtool --finish /usr/lib
+EOF
 	install_pkgs aur st-luke-git
 	print_info "${INFO}" "Installing Package libxft-bgra"
 	yay -S libxft-bgra --answerdiff N --answerclean A --answeredit N --answerupgrade A --cleanafter --norebuild --noredownload
 	[ $? -eq 0 ] && successful_pkgs+=("libxft-bgra") || failed_pkgs+=("libxft-bgra")
-	install_pkgs pacman lsd flameshot dunst libnotify
-	# LSD
-	cat >>~/.zshrc <<EOF
-	# ls aliases
-alias ls='lsd'
-alias l='ls -l'
-alias la='ls -a'
-alias lla='ls -la'
-alias lt='ls --tree'
-EOF
+	install_pkgs pacman flameshot dunst libnotify
+	# 	install_pkgs pacman lsd flameshot dunst libnotify
+	# 	# LSD
+	# 	cat >>~/.zshrc <<EOF
+	# # ls aliases
+	# alias ls='lsd'
+	# alias l='ls -l'
+	# alias la='ls -a'
+	# alias lla='ls -la'
+	# alias lt='ls --tree'
+
+	# EOF
+	install_pkgs aur ruby-colorls
 	# Flameshot
 	# 	cat >>~/.config/i3/config <<EOF
 	# # Screenshots
@@ -125,7 +142,7 @@ EOF
 	# EOF
 	# Dunst
 	mkdir ~/.config/dunst
-	wget https://raw.githubusercontent.com/dunst-project/dunst/master/dunstrc ~/.config/dunst
+	wget https://raw.githubusercontent.com/dunst-project/dunst/master/dunstrc ~/.config/dunst/dunstrc
 	sudo systemctl enable --user dunst.service
 	sudo systemctl start --user dunst.service
 	# ranger
@@ -137,47 +154,53 @@ EOF
 	sudo cp bash-insulter/src/bash.command-not-found /etc/
 	cat >>~/.zshrc <<EOF
 if [ -f /etc/bash.command-not-found ]; then
-    . /etc/bash.command-not-found
+	. /etc/bash.command-not-found
 fi
+
 EOF
 	# vim
 	sudo git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim
 	# misc
-	install_pkgs pacman openssh gdisk rofi feh jpegexiforient imagemagick python-pip python-pywal nitrogen python2 p7zip lrzip unrar tar rsync bash-completion
+	install_pkgs pacman openssh gdisk rofi feh jpegexiforient imagemagick python-pip python-pywal nitrogen python2 p7zip lrzip unrar tar rsync bash-completion gnome-keyring
+	# polybar
+	install_pkgs pacman xorg-fonts-misc
+	install_pkgs aur ttf-unifont siji-git polybar
+	# snap
+	install_pkgs aur snapd
+	sudo systemctl start snapd
+}
+
+create_aliases() {
 	cat >>~/.zshrc <<EOF
-	# git aliases
+# ls aliases
+alias l='colorls'
+alias la='colorls -A'
+alias ld='colorls -d'
+alias lad='colorls -Ad'
+alias lf='colorls -f'
+alias laf='colorls -Af'
+alias ll='colorls -l'
+alias lla='colorls -lA'
+alias lr='colorls --report'
+alias lt='colorls --tree'
+
+# git aliases
 alias gs='git status'
 alias ga='git add .'
 alias gc='git commit -m'
 alias gac='git add . && git commit -m'
 alias gp='git push'
 alias gl='git log --oneline --graph --decorate'
+
+# misc
+alias du='du -h'
+
 EOF
-	# polybar
-	install_pkgs pacman xorg-fonts-misc
-	install_pkgs aur ttf-unifont siji-git polybar
-	# xrandr
-	monitor=$(xrandr | awk '$2 == "connected"{print $1}')
-	sed -i "/xrandr --output eDP-1/ s/eDP-1/${monitor}/" ~/.config/i3/config
-	sed -i "/monitor = \"eDP-1\"/ s/eDP-1/${monitor}/" ~/.config/polybar/config
-	# snap
-	# install_pkgs aur snapd
-	# sudo systemctl start snapd
-	# install_pkgs snap mailspring
-	# install_pkgs pacman gnome-keyring
-	# docker
-	# sudo tee /etc/modules-load.d/loop.conf <<<"loop" # enable the loop module
-	# modprobe loop
-	# sudo pacman -S docker
-	# sudo systemctl start docker.service
-	# sudo systemctl enable docker.service
-	# sudo groupadd docker
-	# sudo usermod -aG docker "${USER}"
 }
 
 install_ricing() {
 	divider "START: Ricing Installation"
-	install_pkgs pacman dos2unix
+	install_pkgs pacman dos2unix picom
 	git clone https://github.com/basantech89/arch-ricing ~/arch-ricing
 	cd ~/arch-ricing || exit "${DIR_NOT_EXISTS}"
 	find . -type f -not -path '*/\.git/*' ! -name '*.jpg' -print0 | xargs -0 dos2unix -f
@@ -189,7 +212,8 @@ install_ricing() {
 	install_oh_my_zsh
 	install_fonts
 	install_tools
+	create_aliases
 	sudo chown -R "${USER}" /home/"${USER}"
 	sudo chmod u+rw -R /home/"${USER}"
 	divider "END: Ricing Installation"
-} > >(sudo tee -i ~/project_automator/installation_ricing.log) 2> >(sudo tee -i ~/project_automator/installation_error_ricing.log >&2)
+} > >(tee -i ~/project_automator/installation_ricing.log) 2> >(tee -i ~/project_automator/installation_error_ricing.log >&2)

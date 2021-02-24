@@ -27,9 +27,10 @@ install_graphics() {
 	fi
 	confirm_graphics_card "${isNvidia}"
 	install_pkgs pacman "${pkgs[@]}"
+	print_info "${ERROR}" "variable isNvidia value is ${isNvidia}"
 	if [ "${isNvidia}" -eq 0 ]; then
-		echo 'blacklist nouveau' | sudo tee -a /usr/lib/modprobe.d/nvidia.conf >/dev/null
-		echo 'sudo nvidia-smi' | sudo tee -a ~/post_setup.sh >/dev/null
+		echo "blacklist nouveau" | sudo tee -a /usr/lib/modprobe.d/nvidia.conf >/dev/null
+		echo "sudo nvidia-smi" | tee -a ~/project_automator/post_setup.sh >/dev/null
 		install_pkgs aur optimus-manager optimus-manager-qt
 		sudo systemctl start optimus-manager
 		sudo optimus-manager --switch hybrid
@@ -79,10 +80,10 @@ Section "InputClass"
 	Driver "libinput"
 EndSection
 EOF
-	cat >>~/post_installation_notes.txt <<EOF
-sudo libinput list-devices
-sudo xinput list-props "MSFT0001:01 06CB:CD5F Touchpad"
-sudo xinput set-prop "MSFT0001:01 06CB:CD5F Touchpad" "libinput Tapping Enabled" 1
+	cat >>~/project_automator/post_setup.sh <<EOF
+# sudo libinput list-devices
+# sudo xinput list-props "MSFT0001:01 06CB:CD5F Touchpad"
+# sudo xinput set-prop "MSFT0001:01 06CB:CD5F Touchpad" "libinput Tapping Enabled" 1
 EOF
 }
 
@@ -112,4 +113,4 @@ install_drivers() {
 	install_touchpad
 	install_bluetooth
 	divider "END: System Drivers Installation"
-} > >(sudo tee -i installation_drivers.log) 2> >(sudo tee -i installation_error_drivers.log >&2)
+} > >(tee -i ~/project_automator/installation_drivers.log) 2> >(tee -i ~/project_automator/installation_error_drivers.log >&2)

@@ -4,8 +4,7 @@
 . ~/project_automator/src/variables.sh
 
 prompt_variable() {
-	arg="${1}"
-	print_info "${PROMPT}" "Please type ${arg} ${NC}"
+	print_info "${PROMPT}" "Please type ${1} ${NC}"
 	read -r prompt_result
 	print_info "${INFO}" "You provided ${prompt_result} as the input."
 	print_info "${PROMPT}" "Press y|Y if this is correct. Press any other key to try again"
@@ -13,10 +12,11 @@ prompt_variable() {
 
 set_variable() {
 	prompt_variable "${1}"
+	pass="${2}"
 	while read -r response; do
 		case "$response" in
 		["Yy"])
-			eval export "${arg}"="${prompt_result}"
+			eval export "${pass}=${prompt_result}"
 			break
 			;;
 		*) prompt_variable "${1}" ;;
@@ -85,7 +85,7 @@ update_shell() {
 }
 
 update_system() {
-	sudo pacman -Syu --noconfirm
+	sudo pacman -Sy --noconfirm
 }
 
 print_info() {

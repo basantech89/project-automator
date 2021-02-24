@@ -6,14 +6,14 @@
 prompt_installation_variables() {
   set_uefi_mode
   if [ "${UEFI_ENABLED}" = 'yes' ]; then
-    set_variable efi_partition
+    set_variable "EFI Partition" efi_partition
   else
-    set_variable disk
+    set_variable "Disk" disk
   fi
-  set_variable hostname
-  set_variable root_password
-  set_variable new_username
-  set_variable new_user_password
+  set_variable "Hostname" hostname
+  set_variable "Root Password" root_password
+  set_variable "New Username" new_username
+  set_variable "New User Password" new_user_password
   select_installation_mode
   show_info
 }
