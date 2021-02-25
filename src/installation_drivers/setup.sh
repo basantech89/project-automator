@@ -27,13 +27,14 @@ install_graphics() {
 	fi
 	confirm_graphics_card "${isNvidia}"
 	install_pkgs pacman "${pkgs[@]}"
-	print_info "${ERROR}" "variable isNvidia value is ${isNvidia}"
 	if [ "${isNvidia}" -eq 0 ]; then
 		echo "blacklist nouveau" | sudo tee -a /usr/lib/modprobe.d/nvidia.conf >/dev/null
-		echo "sudo nvidia-smi" | tee -a ~/project_automator/post_setup.sh >/dev/null
+		tee a ~/project_automator/post_setup.sh >/dev/null <<EOF
+sudo nvidia-smi
+sudo systemctl start optimus-manager
+sudo optimus-manager --switch hybrid
+EOF
 		install_pkgs aur optimus-manager optimus-manager-qt
-		sudo systemctl start optimus-manager
-		sudo optimus-manager --switch hybrid
 		sudo usermod -a -G video "${USER}"
 		cat >>~/.config/i3/config <<EOF
 Brightness
@@ -51,7 +52,7 @@ EOF
 
 install_battery() {
 	print_info "${SUCCESS}" "Installing Power Modules"
-	install_pkgs pacman tlp tlp-rdw
+	install_pkgs pacman ethtool lsb-release smartmontools x86_energy_perf_policy tlp tlp-rdw
 	sudo systemctl enable tlp.service
 	sudo systemctl enable NetworkManager-dispatcher.service
 	sudo systemctl mask systemd-rfkill.service
@@ -60,7 +61,10 @@ install_battery() {
 
 install_audio() {
 	print_info "${SUCCESS}" "Installing Audio"
-	install_pkgs pacman pulseaudio pulseaudio-alsa alsa-utils vlc a52dec faac faad2 flac jasper lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 xvidcore gstreamer0.10-plugins
+	# intel architecture families
+	# >= Broadwell --> intel-media-driver
+	# <= Haswell --> libva-intel-driver
+	install_pkgs pacman libva-vdapu-driver intel-media-driver libva-vdpau libavtp libsamplerate fftw celt libffado realtime-privileges avisynthplus ladspa sdl gst-plugins-base-libs libdc1394 gnu-free-fonts twolame mpg123 aalib libcaca pulseaudio-alsa pulseaudio-lirc pulseaudio-jack pulseaudio-zerconf pulseaudio-bluetooth pulseaudio-equalizer pulseaudio-rtp pulseaudio alsa-utils vlc a52dec faac faad2 flac jasper lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 xvidcore gstreamer0.10-plugins
 	amixer sset Master unmute
 	amixer sset Speaker unmute
 	amixer sset Headphone unmute
