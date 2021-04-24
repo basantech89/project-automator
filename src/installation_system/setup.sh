@@ -18,6 +18,13 @@ prompt_installation_variables() {
   show_info
 }
 
+pre_installation_check() {
+  [ -z "$(ls -A /mnt)" ] && {
+    print_info "${ERROR}" "Invalid mount point /mnt detected"
+    exit 5
+  }
+}
+
 select_mirror() {
   print_info "${INFO}" "Selecting fastest mirrors"
   pacman -Syy --noconfirm >/dev/null
@@ -32,8 +39,8 @@ select_mirror() {
 prepare_system_installation() {
   print_info "${WARNING}" "Before running this script, make sure you have created and formatted your disk"
   print_info "${WARNING}" "and mounted the root partition in /mnt"
+  pre_installation_check
   prompt_installation_variables
-
   divider "Starting Installation"
   if [ "${installation_mode}" = "Online" ]; then
     sed -i "/#\[multilib\]/{n;s/#//}" /etc/pacman.conf

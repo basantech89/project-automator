@@ -4,10 +4,10 @@
 
 install_bootloader() {
 	if [ "${UEFI_ENABLED}" = 'yes' ]; then
-		install_pkgs pacman grub efibootmgr dosfstools os-prober mtools
+		install_pkgs pacman grub efibootmgr dosfstools os-prober mtools fuse2 freetype2
 		mkdir /boot/efi
 		mount "/dev/${efi_partition}" /boot/efi
-		grub-install --target=x86_64-efi --bootloader-id=GRUB --efi-directory=/boot/efi --removable
+		grub-install --target=x86_64-efi --bootloader-id=ARCH_GRUB --efi-directory=/boot/efi
 		grub-mkconfig -o /boot/grub/grub.cfg
 	else
 		install_pkgs pacman grub os-prober
@@ -27,6 +27,10 @@ EOF
 		install_pkgs pacman networkmanager openssh
 		systemctl enable NetworkManager
 	}
+}
+
+install_extra_tools() {
+	install_pkgs pacman -S gd words ed crda dnsmasq dhclient x11-ssh-askpass linux-headers
 }
 
 config_offline() {
@@ -81,6 +85,7 @@ config_system() {
 		install_pkgs pacman linux-lts
 	fi
 
+	install_extra_tools
 	install_bootloader
 	exit
 }

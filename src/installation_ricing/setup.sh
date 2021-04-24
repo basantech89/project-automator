@@ -17,7 +17,7 @@ install_oh_my_zsh() {
 	}
 	test -d ~/.oh-my-zsh && {
 		print_info "${INFO}" ".oh-my-zsh already installed, not installing again."
-		successful_pkgs+=('oh-my-zsh')
+		already_installed_pkgs+=('oh-my-zsh')
 		# print_info "${INFO}" "Directory .oh-my-zsh already exists, backing it up to ~/.oh-my-zsh.backup-$(date +"%Y-%m-%d") and then overwriting"
 		# sudo cp -r ~/.oh-my-zsh ~/.oh-my-zsh.backup-"$(date +"%Y-%m-%d")"
 		# rm -rf ~/.oh-my-zsh
@@ -41,8 +41,8 @@ install_fonts() {
 	install_pkgs pacman ttf-dejavu ttf-liberation noto-fonts noto-fonts-emoji noto-fonts-extra ttf-font-awesome
 	install_pkgs aur nerd-fonts-terminus powerline-fonts-git nerd-fonts-dejavu-complete nerd-fonts-space-mono
 	sudo mkdir -p /usr/local/share/fonts
-	sudo cp -r ~/fonts/* /usr/local/share/fonts
-	sudo fc-cache -f
+	# sudo cp -r ~/fonts/* /usr/local/share/fonts
+	# sudo fc-cache -f
 	test -f ~/.config/fontconfig/fonts.conf || {
 		sudo mkdir ~/.config/fontconfig
 		sudo tee -a ~/.config/fontconfig/fonts.conf >/dev/null <<EOF
@@ -117,29 +117,26 @@ sed -i "/monitor = \"eDP-1\"/ s/eDP-1/\${monitor}/" ~/.config/polybar/config
 # misc
 libtool --finish /usr/lib
 EOF
+	# resolve vsync error in vortual machines
+	is_virt="$(systemd-detect-virt)"
+	print_info "${ERROR}" "LS .config output"
+	ls ~/.config
+	test -z "${is_virt}" || {
+		if [[ -f ~/.config/picom.conf ]]; then
+			print_info "${ERROR}" "picom conf"
+			sed -i '/vsync =/ s/./# &/' ~/.config/picom.conf
+		elif [[ -f ~/.config/compton.conf ]]; then
+			print_info "${ERROR}" "compton conf"
+			sed -i '/vsync =/ s/./# &/' ~/.config/compton.conf
+		fi
+	}
+
 	install_pkgs aur st-luke-git
 	print_info "${INFO}" "Installing Package libxft-bgra"
 	yay -S libxft-bgra --answerdiff N --answerclean A --answeredit N --answerupgrade A --cleanafter --norebuild --noredownload
 	[ $? -eq 0 ] && successful_pkgs+=("libxft-bgra") || failed_pkgs+=("libxft-bgra")
 	install_pkgs pacman flameshot dunst libnotify
-	# 	install_pkgs pacman lsd flameshot dunst libnotify
-	# 	# LSD
-	# 	cat >>~/.zshrc <<EOF
-	# # ls aliases
-	# alias ls='lsd'
-	# alias l='ls -l'
-	# alias la='ls -a'
-	# alias lla='ls -la'
-	# alias lt='ls --tree'
-
-	# EOF
 	install_pkgs aur ruby-colorls
-	# Flameshot
-	# 	cat >>~/.config/i3/config <<EOF
-	# # Screenshots
-	# bindsym Print exec --no-startup-id flameshot full -c -p ~/Screenshots
-	# bindsym Shift+Print exec --no-startup-id flameshot gui
-	# EOF
 	# Dunst
 	mkdir ~/.config/dunst
 	wget https://raw.githubusercontent.com/dunst-project/dunst/master/dunstrc ~/.config/dunst/dunstrc
@@ -165,15 +162,20 @@ EOF
 	# polybar
 	install_pkgs pacman xorg-fonts-misc
 	install_pkgs aur ttf-unifont siji-git polybar
+	wlan_interface="$(iw dev | awk '$1=="Interface"{print $2}')"
+	test -z "${wlan_interface}" ||
+		sudo sed -i "/interface = wlp0s20f3/ s/wlp0s20f3/${wlan_interface}/" ~/.config/polybar/config &&
+		sudo sed -i "/modules-right = pulseaudio cpu memory wlan battery/ s/wlan //" ~/.config/polybar/config
 	# snap
-	install_pkgs aur snapd
-	sudo systemctl start snapd
+	# install_pkgs aur snapd
+	# sudo systemctl start snapd
 }
 
 create_aliases() {
 	cat >>~/.zshrc <<EOF
 # ls aliases
 alias l='colorls'
+alias ls='colorls'
 alias la='colorls -A'
 alias ld='colorls -d'
 alias lad='colorls -Ad'
@@ -188,6 +190,7 @@ alias lt='colorls --tree'
 alias gs='git status'
 alias ga='git add .'
 alias gc='git commit -m'
+alias go='git checkout'
 alias gac='git add . && git commit -m'
 alias gp='git push'
 alias gl='git log --oneline --graph --decorate'
@@ -213,7 +216,8 @@ install_ricing() {
 	install_fonts
 	install_tools
 	create_aliases
-	sudo chown -R "${USER}" /home/"${USER}"
-	sudo chmod u+rw -R /home/"${USER}"
+	sudo chown -R "${USER}" /home/"${USER}/"
+	sudo chmod u+rwx -R /home/"${USER}/"
+	rm -rf ~/arch-ricing
 	divider "END: Ricing Installation"
 } > >(tee -i ~/project_automator/installation_ricing.log) 2> >(tee -i ~/project_automator/installation_error_ricing.log >&2)

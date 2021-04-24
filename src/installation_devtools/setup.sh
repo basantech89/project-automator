@@ -33,15 +33,33 @@ install_docker() {
     sudo usermod -aG docker "${USER}"
 }
 
+install_vmware_player() {
+    install_pkgs pacman fuse2 gtkmm linux-headers pcsclite libcanberra polkit-gnome
+    install_pkgs aur ncurses5-compat-libs
+    sudo modprobe -a vmw_vmci vmmon
+    # now download the bnndle and execute it
+    # uninstallation
+    # sudo vmware-installer -u vmware-player --required
+}
+
+install_virtualbox() {
+    install_pkgs pacman virtualbox virtualbox-guest-iso
+    sudo modprobe vboxdrv
+    install_pkgs aur virtualbox-ext-oracle
+    sudo systemctl enable vboxweb.service
+    sudo systemctl start vboxweb.service
+}
+
 install_devtools() {
     divider "START: Dev Tools Installation"
     install_node
     install_yarn
-    install_pkgs pacman peek gifski
-    install_pkgs aur google-chrome postman-bin visual-studio-code-bin webstorm
+    install_pkgs pacman peek gifski gifsicle jre-openjdk mlocate
+    # install_pkgs aur google-chrome visual-studio-code-bin slack-desktop postman-bin
     install_docker
-    sudo systemctl start snapd
-    install_pkgs snap mailspring
+    # install_virtualbox
+    # install_pkgs snap mailspring
+    # sudo systemctl start snapd
     divider "END: Dev Tools Installation"
 } > >(tee -i ~/project_automator/installation_devtools.log) 2> >(tee -i ~/project_automator/installation_error_devtools.log >&2)
 sudo

@@ -7,7 +7,7 @@
 . ~/project_automator/src/installation_devtools/setup.sh
 
 install_basic_tools() {
-    install_pkgs pacman wget vi vim wpa_supplicant git networkmanager
+    install_pkgs pacman wget vi vim wpa_supplicant git networkmanager rxvt-unicode
     git config --global core.editor vim
     if ! command -v yay &>/dev/null; then
         print_info "${INFO}" "Installing YAY Aur Helper"
@@ -16,7 +16,7 @@ install_basic_tools() {
         git clone https://aur.archlinux.org/yay.git
         cd yay || exit
         makepkg -si --noconfirm
-        rm -rf yay
+        rm -rf ~/yay
         cd ~ || exit
         successful_pkgs+=('yay')
     else
@@ -55,24 +55,25 @@ tools_menu() {
             ;;
         esac
     done
+    reboot
 }
 
-post_install() {
-    chmod +x ~/project_automator/post_run.sh
-    mkdir -p ~/.config/systemd/user
-    cat >>~/.config/systemd/user/automator.service <<EOF
-[Unit]
-Description=Post Automator Daemon
+# post_install() {
+#     chmod +x ~/project_automator/post_run.sh
+#     mkdir -p ~/.config/systemd/user
+#     cat >>~/.config/systemd/user/automator.service <<EOF
+# [Unit]
+# Description=Post Automator Daemon
 
-[Service]
-ExecStart=/bin/bash %h/project_automator/post_run.sh
+# [Service]
+# ExecStart=/bin/bash %h/project_automator/post_run.sh
 
-[Install]
-WantedBy=default.target
-EOF
-    systemctl --user enable ~/.config/systemd/user/automator.service
-    reboot
-} > >(tee -i ~/project_automator/post_install.log) 2> >(tee -i ~/project_automator/post_install_error.log >&2)
+# [Install]
+# WantedBy=default.target
+# EOF
+#     systemctl --user enable ~/.config/systemd/user/automator.service
+#     reboot
+# } > >(tee -i ~/project_automator/post_install.log) 2> >(tee -i ~/project_automator/post_install_error.log >&2)
 
 tools_menu
 

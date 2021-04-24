@@ -17,35 +17,38 @@ confirm_graphics_card() {
 
 install_graphics() {
 	print_info "${INFO}" "Installing Graphics"
-	declare -a pkgs=(xorg-server-devel)
+	declare -a pkgs=('xorg-server-devel' 'xf86-video-intel' 'mesa' 'mesa-vdpau' 'libva-mesa-driver' 'vulkan-driver' 'vulkan-intel')
 	lspci | grep -ie 'nvidia' >/dev/null
 	isNvidia=$?
 	if [ "${isNvidia}" -eq 0 ]; then
-		pkgs+=('nvidia' 'nvidia-utils' 'nvidia-settings' 'opencl-nvidia')
-	else
-		pkgs+=('xf86-video-intel' 'mesa' 'vulkan-intel')
+		pkgs+=('nvidia' 'nvidia-utils' 'nvidia-settings' 'opencl-nvidia' 'libvdpau')
 	fi
 	confirm_graphics_card "${isNvidia}"
 	install_pkgs pacman "${pkgs[@]}"
 	if [ "${isNvidia}" -eq 0 ]; then
 		echo "blacklist nouveau" | sudo tee -a /usr/lib/modprobe.d/nvidia.conf >/dev/null
-		tee a ~/project_automator/post_setup.sh >/dev/null <<EOF
+		tee a ~/project_automator/post_run.sh >/dev/null <<EOF
+# after reboot
 sudo nvidia-smi
 sudo systemctl start optimus-manager
 sudo optimus-manager --switch hybrid
 EOF
 		install_pkgs aur optimus-manager optimus-manager-qt
 		sudo usermod -a -G video "${USER}"
-		cat >>~/.config/i3/config <<EOF
-Brightness
+		cat >>~/project_automator/post_run.sh <<EOF
+cat >>~/.config/i3/config <<DONE
+# Brightness
 bindsym \$mod+\$mod1+Up exec light -A 5
 bindsym \$mod+\$mod1+Down exec light -U 5
+DONE
 EOF
 	else
-		cat >>~/.config/i3/config <<EOF
-Brightness
+		cat >>~/project_automator/post_run.sh <<EOF
+cat >>~/.config/i3/config <<DONE
+# Brightness
 bindsym \$mod+\$mod1+Up exec xbacklight -inc +5
 bindsym \$mod+\$mod1+Down exec xbacklight -dec +5
+DONE
 EOF
 	fi
 }
@@ -64,7 +67,8 @@ install_audio() {
 	# intel architecture families
 	# >= Broadwell --> intel-media-driver
 	# <= Haswell --> libva-intel-driver
-	install_pkgs pacman libva-vdapu-driver intel-media-driver libva-vdpau libavtp libsamplerate fftw celt libffado realtime-privileges avisynthplus ladspa sdl gst-plugins-base-libs libdc1394 gnu-free-fonts twolame mpg123 aalib libcaca pulseaudio-alsa pulseaudio-lirc pulseaudio-jack pulseaudio-zerconf pulseaudio-bluetooth pulseaudio-equalizer pulseaudio-rtp pulseaudio alsa-utils vlc a52dec faac faad2 flac jasper lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 xvidcore gstreamer0.10-plugins
+	install_pkgs pacman libva-vdpau-driver intel-media-driver libavtp libsamplerate fftw celt libffado realtime-privileges avisynthplus ladspa sdl gst-plugins-base-libs libdc1394 gnu-free-fonts twolame mpg123 aalib libcaca pulseaudio-alsa pulseaudio-lirc pulseaudio-jack pulseaudio-zeroconf pulseaudio-bluetooth pulseaudio-equalizer pulseaudio-rtp pulseaudio alsa-utils vlc a52dec faac faad2 flac jasper lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 xvidcore
+	install_pkgs aur gstreamer0.10-base-plugins
 	amixer sset Master unmute
 	amixer sset Speaker unmute
 	amixer sset Headphone unmute
@@ -81,13 +85,9 @@ Section "InputClass"
   	Option "NaturalScrolling" "True"
 	Option "Tapping" "True"
 	Option "TappingDrag" "True"
+	Option "AccelSpeed" "0.8"
 	Driver "libinput"
 EndSection
-EOF
-	cat >>~/project_automator/post_setup.sh <<EOF
-# sudo libinput list-devices
-# sudo xinput list-props "MSFT0001:01 06CB:CD5F Touchpad"
-# sudo xinput set-prop "MSFT0001:01 06CB:CD5F Touchpad" "libinput Tapping Enabled" 1
 EOF
 }
 
@@ -98,7 +98,8 @@ install_bluetooth() {
 	install_pkgs pacman pulseaudio-bluetooth pulseaudio-alsa pavucontrol bluez bluez-utils blueman
 	sudo systemctl enable bluetooth
 	sudo systemctl start bluetooth
-	sudo tee -a /etc/bluetooth/main.cf >/dev/null <<EOF
+	#	sudo tee -a /etc/bluetooth/main.cf >/dev/null <<EOF
+	sudo tee -a /etc/bluetooth/main.conf >/dev/null <<EOF
 AutoEnable=true
 EOF
 	mkdir -p ~/.config/pulse
