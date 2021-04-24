@@ -55,11 +55,11 @@ install_devtools() {
     install_node
     install_yarn
     install_pkgs pacman peek gifski gifsicle jre-openjdk mlocate
-    # install_pkgs aur google-chrome visual-studio-code-bin slack-desktop postman-bin
+    install_pkgs aur google-chrome visual-studio-code-bin slack-desktop postman-bin
     install_docker
-    # install_virtualbox
-    # install_pkgs snap mailspring
-    # sudo systemctl start snapd
+    install_virtualbox
+    sudo systemctl start snapd
+    install_pkgs snap mailspring
     divider "END: Dev Tools Installation"
 } > >(tee -i ~/project_automator/installation_devtools.log) 2> >(tee -i ~/project_automator/installation_error_devtools.log >&2)
 sudo

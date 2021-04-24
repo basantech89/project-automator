@@ -119,14 +119,11 @@ libtool --finish /usr/lib
 EOF
 	# resolve vsync error in vortual machines
 	is_virt="$(systemd-detect-virt)"
-	print_info "${ERROR}" "LS .config output"
 	ls ~/.config
 	test -z "${is_virt}" || {
 		if [[ -f ~/.config/picom.conf ]]; then
-			print_info "${ERROR}" "picom conf"
 			sed -i '/vsync =/ s/./# &/' ~/.config/picom.conf
 		elif [[ -f ~/.config/compton.conf ]]; then
-			print_info "${ERROR}" "compton conf"
 			sed -i '/vsync =/ s/./# &/' ~/.config/compton.conf
 		fi
 	}
@@ -144,6 +141,8 @@ EOF
 	sudo systemctl start --user dunst.service
 	# ranger
 	install_pkgs pacman ranger atool ffmpegthumbnailer highlight libcaca mediainfo odt2txt poppler poppler-data python-chardet transmission-cli ueberzug w3m
+	ranger --copy-config=all
+	sed -i "/set preview_images false/ s/false/true/" ~/.config/ranger/rc.conf
 	# imagemagick
 	install_pkgs pacman imagemagick ghostscript libwmf ocl-icd
 	# bash-insulter
@@ -167,8 +166,8 @@ EOF
 		sudo sed -i "/interface = wlp0s20f3/ s/wlp0s20f3/${wlan_interface}/" ~/.config/polybar/config &&
 		sudo sed -i "/modules-right = pulseaudio cpu memory wlan battery/ s/wlan //" ~/.config/polybar/config
 	# snap
-	# install_pkgs aur snapd
-	# sudo systemctl start snapd
+	install_pkgs aur snapd
+	sudo systemctl start snapd
 }
 
 create_aliases() {
