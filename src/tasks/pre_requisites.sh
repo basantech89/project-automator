@@ -16,7 +16,7 @@ install_prerequisites() {
       mark_end "Install Prerequisites"
       cd $HOME
     }
-  elif [ "$package_manager" = 'apt' ]; then
+  elif [ "$package_manager" = 'apt-get' ]; then
     mark_start "Install Prerequisites"
 
     cd $HOME

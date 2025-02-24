@@ -2,37 +2,38 @@
 
 install_shell_zsh() {
   install_pkgs zsh
-  chsh -s $(which zsh)
+  cd "$DOTFILES_DIR"
+  make zsh
+  cd ~
 }
 
 install_shell_fish() {
-  if test $package_manager = apt; then
-    sudo apt-add-repository ppa:fish-shell/release-3
-    update_system
+  if test $package_manager = apt-get; then
+    add_apt_repo ppa:fish-shell/release-3
   fi
 
   install_pkgs fish
-  chsh -s $(which fish)
+  fish -c "test $(fisher -v) || curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher install jorgebucaran/fisher"
+
+  cd "$DOTFILES_DIR"
+  make fish
+  cd ~
 }
 
 install_shell() {
-  cmd=(dialog --separate-output --checklist "Which shell program you want to install?:" 0 0 0)
-  options=(
-    1 "Zsh" off
-    2 "Fish" off
-  )
+  local current_shell=$(sh -c 'ps -p $$ -o ppid=' | xargs ps -o comm= -p)
 
-  local choices=$("${cmd[@]}" "${options[@]}" 2>&1 >/dev/tty)
-  clear
-
-  for choice in $choices; do
-    case $choice in
-    1)
-      install_shell_zsh
-      ;;
-    2)
-      install_shell_fish
-      ;;
-    esac
-  done
+  case $shell in
+  bash)
+    test $current_shell = "bash" || chsh -s $(which bash)
+    ;;
+  zsh)
+    test $current_shell = "zsh" || chsh -s $(which zsh)
+    install_shell_zsh
+    ;;
+  fish)
+    test $current_shell = "fish" || chsh -s $(which fish)
+    install_shell_fish
+    ;;
+  esac
 }

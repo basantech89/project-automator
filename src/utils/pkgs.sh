@@ -6,7 +6,7 @@ detect_package_manager() {
     distro=$(cat /etc/os-release | grep ^ID_LIKE= | cut -d '=' -f2)
     case "$distro" in
     "ubuntu" | "debian")
-      package_manager="apt"
+      package_manager="apt-get"
       ;;
     "centos" | "rhel")
       log "${ERROR}" "CentOS/RHEL is not yet supported."
@@ -40,7 +40,7 @@ detect_package_manager() {
 }
 
 update_system() {
-  mark_start "System Update"
+  test "${1}" = quiet || mark_start "System Update"
 
   if ! sudo -l -U $USER &>/dev/null; then
     log "${ERROR}" "User $USER is not in sudoers list."
@@ -48,7 +48,7 @@ update_system() {
   fi
 
   case "$package_manager" in
-  "apt")
+  "apt-get")
     sudo "$package_manager" update
     ;;
   "pacman")
@@ -56,7 +56,7 @@ update_system() {
     ;;
   esac
 
-  mark_end "System Update"
+  test "${1}" = quiet || mark_end "System Update"
 }
 
 is_pkg_installed_arch() {
@@ -73,7 +73,7 @@ is_pkg_installed_arch() {
 }
 
 is_pkg_installed_apt() {
-  if test apt list --installed "${1}" | grep -q "${1}" &>/dev/null; then
+  if (($(dpkg -l "${1}" 2>&- | grep -c ^ii) == 1)); then
     return "${RESOLVED}"
   else
     return "${PKG_NOT_INSTALLED}"
@@ -89,20 +89,20 @@ is_pkg_installed_brew() {
 }
 
 is_pkg_installed() {
-  if test $package_manager = pacman; then
-    return is_pkg_installed_arch "$@"
-  elif test $package_manager = apt; then
-    return is_pkg_installed_apt "$@"
-  elif test $package_manager = brew; then
-    return is_pkg_installed_brew "$@"
+  if test "$package_manager" = pacman; then
+    is_pkg_installed_arch "${@}"
+  elif test "$package_manager" = apt-get; then
+    is_pkg_installed_apt "${@}"
+  elif test "$package_manager" = brew; then
+    is_pkg_installed_brew "${@}"
   fi
 }
 
 install_pkg_arch() {
   if pacman -Ss "${1}" &>/dev/null; then
-    return sudo pacman -S "${@}" --needed --noconfirm
+    sudo pacman -S "${@}" --needed --noconfirm
   elif paru -Ss "${1}" &>/dev/null; then
-    return paru -Sy "${@}" --removemake --cleanafter --needed --noconfirm --norebuild --noredownload --skipreview
+    paru -Sy "${@}" --removemake --cleanafter --needed --noconfirm --norebuild --noredownload --skipreview
   else
     log "${ERROR}" "Not able to install package ${1}."
     exit $PKG_NOT_INSTALLED
@@ -110,10 +110,8 @@ install_pkg_arch() {
 }
 
 install_pkg_apt() {
-  echo before all args "${@}"
-  if test apt list "${1}" | grep -q "${1}" &>/dev/null; then
-    echo all args "${@}"
-    return sudo apt install -y "${@}"
+  if apt-cache show "${1}" >/dev/null 2>&1; then
+    sudo apt-get install -y "${@}"
   else
     log "${ERROR}" "Not able to install package ${1}."
     exit $PKG_NOT_INSTALLED
@@ -122,7 +120,7 @@ install_pkg_apt() {
 
 install_pkg_brew() {
   if brew list | grep -q "${1}" &>/dev/null; then
-    return brew install "${@}"
+    brew install "${@}"
   else
     log "${ERROR}" "Not able to install package ${1}."
     exit $PKG_NOT_INSTALLED
@@ -133,28 +131,68 @@ install_pkg() {
   if is_pkg_installed "${1}"; then
     already_installed_pkgs+=("${1}")
   else
-    mark_start "Installing Package" $SECONDARY
+    mark_start "Installing Package ${1}" $SECONDARY
 
     if test $package_manager = pacman; then
       install_pkg_arch "${@}"
-    elif test $package_manager = apt; then
+    elif test $package_manager = apt-get; then
       install_pkg_apt "${@}"
     elif test $package_manager = brew; then
       install_pkg_brew "${@}"
     fi
 
     [ $? -eq 0 ] && successful_pkgs+=("${1}") || failed_pkgs+=("${1}")
-    mark_end "Installing Package" $SECONDARY
+    mark_end "Installing Package ${1}" $SECONDARY
   fi
 }
 
 install_pkgs() {
-  if [ "$1" = "snap" ]; then
-    shift
-    sudo snap install "${@}"
-  else
-    for pkg in "${@}"; do
-      install_pkg "${@}"
+  local options=()
+  local packages=()
+  local package_installer=""
+
+  for option in "${@}"; do
+    if [[ "${option}" == "--snap" ]]; then
+      package_installer="snap"
+    elif [[ "${option}" == "--*" ]]; then
+      options+=("${option}")
+    else
+      packages+=("${option}")
+    fi
+  done
+
+  if [[ "${package_installer}" == "snap" ]]; then
+    for pkg in "${packages}"; do
+      sudo snap install "${options[@]}" "${pkg}"
+      [ $? -eq 0 ] && successful_pkgs+=("${1}") || failed_pkgs+=("${1}")
     done
+
+    return
+  fi
+
+  for pkg in "${packages[@]}"; do
+    install_pkg "${pkg}" "${options[@]}"
+  done
+}
+
+add_apt_repo() {
+  local ppa=$(echo "${1}" | cut -d ":" -f 2 | cut -d "/" -f 1 >/dev/null)
+  if ! sudo add-apt-repository -L | grep "${ppa}" &>/dev/null 2>&1; then
+    sudo add-apt-repository -y "${1}"
+    update_system quiet
+  fi
+}
+
+source_shell_config() {
+  if [ $shell = bash -a -f ~/.bashrc ]; then
+    source ~/.bashrc
+  fi
+
+  if [ $shell = zsh -a -f ~/.zshrc ]; then
+    source ~/.zshrc
+  fi
+
+  if [ $shell = fish -a -f ~/.config/fish/config.fish ]; then
+    source ~/.config/fish/config.fish
   fi
 }

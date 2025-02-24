@@ -3,8 +3,10 @@
 pre_install() {
   cd $HOME
   mark_start "Pre-Install" $TITLE
-  break_line
 
+  prompt_user
+
+  break_line
   detect_package_manager
 
   break_line
