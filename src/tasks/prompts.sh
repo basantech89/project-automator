@@ -10,20 +10,17 @@ select_shell() {
   local choice=$(dialog --clear --stdout --backtitle "Shell" --radiolist "Which primary shell program you want to use?:" 0 0 0 "${options[@]}")
 
   local current_shell=$(sh -c 'ps -p $$ -o ppid=' | xargs ps -o comm= -p)
-  clear
+  # clear
 
   case $choice in
   1)
     shell=bash
-    test $current_shell = "bash" || chsh -s $(which bash)
     ;;
   2)
     shell=zsh
-    test $current_shell = "zsh" || chsh -s $(which zsh)
     ;;
   3)
     shell=fish
-    test $current_shell = "fish" || chsh -s $(which fish)
     ;;
   esac
 }
@@ -80,7 +77,7 @@ select_tools() {
     node_version=$(dialog --clear --stdout --backtitle "Node Version" --inputbox "Enter the node version you want to install; type lts for the latest stable release; e.g. 20, lts:" 0 0)
   fi
 
-  clear
+  # clear
 }
 
 prompt_user() {

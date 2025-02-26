@@ -42,19 +42,19 @@ detect_package_manager() {
 update_system() {
   test "${1}" = quiet || mark_start "System Update"
 
-  if ! sudo -l -U $USER &>/dev/null; then
-    log "${ERROR}" "User $USER is not in sudoers list."
-    exit $NOT_SUDO_USER
-  fi
-
   case "$package_manager" in
   "apt-get")
-    sudo "$package_manager" update
+    echo "$SUDO_PASSWORD" | sudo "$package_manager" update
     ;;
   "pacman")
-    sudo "$package_manager" -Sy --noconfirm --needed
+    echo "$SUDO_PASSWORD" | sudo "$package_manager" -Sy --noconfirm --needed
     ;;
   esac
+
+  [ $? -eq 0 ] || {
+    log "${ERROR}" "System Update failed."
+    exit $SYSTEM_UPDATE_FAILED
+  }
 
   test "${1}" = quiet || mark_end "System Update"
 }
@@ -100,7 +100,7 @@ is_pkg_installed() {
 
 install_pkg_arch() {
   if pacman -Ss "${1}" &>/dev/null; then
-    sudo pacman -S "${@}" --needed --noconfirm
+    echo "$SUDO_PASSWORD" | sudo pacman -S "${@}" --needed --noconfirm
   elif paru -Ss "${1}" &>/dev/null; then
     paru -Sy "${@}" --removemake --cleanafter --needed --noconfirm --norebuild --noredownload --skipreview
   else
@@ -111,7 +111,7 @@ install_pkg_arch() {
 
 install_pkg_apt() {
   if apt-cache show "${1}" >/dev/null 2>&1; then
-    sudo apt-get install -y "${@}"
+    echo "$SUDO_PASSWORD" | sudo apt-get install -y "${@}"
   else
     log "${ERROR}" "Not able to install package ${1}."
     exit $PKG_NOT_INSTALLED
@@ -131,7 +131,7 @@ install_pkg() {
   if is_pkg_installed "${1}"; then
     already_installed_pkgs+=("${1}")
   else
-    mark_start "Installing Package ${1}" $SECONDARY
+    mark_start "Installing Package ${1}" $SUCCESS
 
     if test $package_manager = pacman; then
       install_pkg_arch "${@}"
@@ -142,7 +142,7 @@ install_pkg() {
     fi
 
     [ $? -eq 0 ] && successful_pkgs+=("${1}") || failed_pkgs+=("${1}")
-    mark_end "Installing Package ${1}" $SECONDARY
+    mark_end "Installing Package ${1}" $SUCCESS
   fi
 }
 
@@ -163,7 +163,7 @@ install_pkgs() {
 
   if [[ "${package_installer}" == "snap" ]]; then
     for pkg in "${packages}"; do
-      sudo snap install "${options[@]}" "${pkg}"
+      echo "$SUDO_PASSWORD" | sudo snap install "${options[@]}" "${pkg}"
       [ $? -eq 0 ] && successful_pkgs+=("${1}") || failed_pkgs+=("${1}")
     done
 
@@ -176,11 +176,16 @@ install_pkgs() {
 }
 
 add_apt_repo() {
-  local ppa=$(echo "${1}" | cut -d ":" -f 2 | cut -d "/" -f 1 >/dev/null)
-  if ! sudo add-apt-repository -L | grep "${ppa}" &>/dev/null 2>&1; then
-    sudo add-apt-repository -y "${1}"
+  local ppa=$(echo "${1}" | cut -d ":" -f 2 | cut -d "/" -f 1)
+  if sudo add-apt-repository -L | grep "${ppa}" &>/dev/null 2>&1; then
+    log "${INFO}" "PPA ${1} is already added."
+  else
+    mark_start "Adding PPA ${1}" $SECONDARY
+    echo "$SUDO_PASSWORD" | sudo add-apt-repository -y "${1}"
     update_system quiet
+    mark_end "Adding PPA ${1}" $SECONDARY
   fi
+
 }
 
 source_shell_config() {

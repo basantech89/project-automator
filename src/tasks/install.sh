@@ -8,7 +8,10 @@ install_tools() {
 }
 
 install() {
-  copy_dotfiles
+  mark_start "Install" $TITLE
+
   install_shell
   install_tools
+
+  mark_end "Install" $TITLE
 }

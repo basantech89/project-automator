@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 install_prerequisites() {
-  install_pkgs git dialog sudo curl wget gpg
+  install_pkgs git sudo curl wget gpg
 
   if [ "$package_manager" = 'pacman' ]; then
     is_pkg_installed paru && already_installed_pkgs+=('paru') || {
@@ -19,12 +19,10 @@ install_prerequisites() {
   elif [ "$package_manager" = 'apt-get' ]; then
     mark_start "Install Prerequisites"
 
-    cd $HOME
     sudo "$package_manager" update
     install_pkgs software-properties-common
 
     mark_end "Install Prerequisites"
-    cd $HOME
   elif [ "$package_manager" = 'brew' ]; then
     is_pkg_installed brew && already_installed_pkgs+=('brew') || {
       mark_start "Install Prerequisites"
@@ -33,7 +31,6 @@ install_prerequisites() {
       /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
       mark_end "Install Prerequisites"
-      cd $HOME
     }
   fi
 }
