@@ -10,7 +10,7 @@ select_shell() {
   local choice=$(dialog --clear --stdout --backtitle "Shell" --radiolist "Which primary shell program you want to use?:" 0 0 0 "${options[@]}")
 
   local current_shell=$(sh -c 'ps -p $$ -o ppid=' | xargs ps -o comm= -p)
-  # clear
+  clear
 
   case $choice in
   1)
@@ -28,15 +28,16 @@ select_shell() {
 select_tools() {
   local cmd=(dialog --clear --separate-output --backtitle Tools --checklist "Which tools you want to install?:" 0 0 0)
   local options=(
-    1 "Neovim" off
-    2 "Warp Terminal" off
-    3 "Node" off
-    4 "Google Chrome" off
-    5 "Vscode" off
-    6 "Postman" off
-    7 "Docker" off
-    8 "Dbeaver" off
-    9 "Starship" off
+    1 "Neovim" on
+    2 "Warp Terminal" on
+    3 "Starship" on
+    4 "Node" on
+    5 "Google Chrome" on
+    6 "Vscode" on
+    7 "Postman" on
+    8 "Docker" on
+    9 "Dbeaver" on
+    10 "AWS CLI" on
   )
 
   local choices=$("${cmd[@]}" "${options[@]}" 2>&1 >/dev/tty)
@@ -50,34 +51,39 @@ select_tools() {
       warp=true
       ;;
     3)
-      node=true
+      starship=true
       ;;
     4)
-      chrome=true
+      node=true
       ;;
     5)
-      vscode=true
+      chrome=true
       ;;
     6)
-      postman=true
+      vscode=true
       ;;
     7)
-      docker=true
+      postman=true
       ;;
     8)
-      dbeaver=true
+      docker=true
       ;;
     9)
-      starship=true
+      dbeaver=true
+      ;;
+    10)
+      aws_cli=true
       ;;
     esac
   done
 
   if [[ $node = true ]]; then
-    node_version=$(dialog --clear --stdout --backtitle "Node Version" --inputbox "Enter the node version you want to install; type lts for the latest stable release; e.g. 20, lts:" 0 0)
+    if ! is_pkg_installed nvm || ! is_pkg_installed node; then
+      node_version=$(dialog --clear --stdout --backtitle "Node Version" --inputbox "Enter the node version you want to install; type lts for the latest stable release; e.g. 20, lts:" 0 0)
+    fi
   fi
 
-  # clear
+  clear
 }
 
 prompt_user() {

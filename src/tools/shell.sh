@@ -12,6 +12,34 @@ install_shell_zsh() {
 
   sed -i "/plugins=(git)/ a\\\tgit\n\thistory\n\thistory-substring-search\n\tcolored-man-pages\n\tzsh-autosuggestions\n\tzsh-syntax-highlighting\n\tzsh-completions\n\tcopyfile\n\tcopypath\n\tcopybuffer\n\tz\n\tgitignore\n\tnpm\n\tsudo\n\tsystemadmin\n\tyarn\n\tweb-search\n\tssh\n\turltools\n)" ~/.zshrc
   sed -i "/plugins=(git)/ s/git)//" ~/.zshrc
+
+  if [ "$package_manager" = 'brew' ]; then
+    if ! grep -q "bash_completion" ~/.zshrc; then
+      cat <<EOT >>~/.zshrc
+[[ -r "$(brew --prefix)/etc/profile.d/bash_completion.sh" ]] && . "$(brew --prefix)/etc/profile.d/bash_completion.sh"
+EOT
+    fi
+  else
+    if ! grep -q "bash_completion" ~/.zshrc; then
+      cat <<EOT >>~/.zshrc
+if [ -f /etc/bash_completion ]; then
+    . /etc/bash_completion
+fi
+EOT
+    fi
+  fi
+
+  if [ ! -f /etc/bash.command-not-found ]; then
+    sudo wget -O /etc/bash.command-not-found https://raw.githubusercontent.com/hkbakke/bash-insulter/master/src/bash.command-not-found
+  fi
+
+  if ! grep -q "bash.command-not-found"; then
+    cat <<EOT >>~/.zshrc
+if [ -f /etc/bash.command-not-found ]; then
+    . /etc/bash.command-not-found
+fi
+EOT
+  fi
 }
 
 install_shell_fish() {
@@ -24,20 +52,77 @@ install_shell_fish() {
   # fd is a find alternative, bat support syntax highlighting for programming languages
   test $package_manager = apt-get && install_pkgs fd-find || install_pkgs fd
 
-  fish -c "test $(fisher -v >/dev/null 2>&1) && echo fisher is already installed. || begin
-  curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source
-  fisher install jorgebucaran/fisher
-  fisher install markcial/upto
-  fisher install jethrokuan/z
-  fisher install meaningful-ooo/sponge # keeps ur shell history clean from typos
-  fisher install jorgebucaran/autopair.fish
-  fisher install nickeb96/puffer-fish # .....
-  fisher install acomagu/fish-async-prompt
-  fisher install gazorby/fish-abbreviation-tips # show abbreviation tips
-  fisher install jhillyerd/plugin-git
-  fisher install berk-karaal/loadenv.fish
-  fisher install PatrickF1/fzf.fish
+  fish -c "if type -q fisher
+    echo fisher is already installed.
+  else
+    begin
+      curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source
+      fisher install jorgebucaran/fisher
+      fisher install markcial/upto
+      fisher install meaningful-ooo/sponge # keeps ur shell history clean from typos
+      fisher install jorgebucaran/autopair.fish
+      fisher install nickeb96/puffer-fish # .....
+      fisher install acomagu/fish-async-prompt
+      fisher install gazorby/fish-abbreviation-tips # show abbreviation tips
+      fisher install jhillyerd/plugin-git
+      fisher install berk-karaal/loadenv.fish
+      fisher install PatrickF1/fzf.fish
+      fisher install Alaz-Oz/fish-insulter
+    end
   end"
+
+  if ! grep -q "cowsay" ~/.config/fish/conf.d/insulter.fish; then
+    sed -i -e '/\s\s__insulter_print_message/ s/__insulter_print_message/__insulter_print_message | cowsay -f $(ls \/usr\/share\/cowsay\/cows\/ | shuf -n1) | lolcat/g' ~/.config/fish/conf.d/insulter.fish
+  fi
+
+  if ! grep -q "set freq 10" ~/.config/fish/conf.d/insulter.fish; then
+    sed -i -e 's/set freq 4/set freq 10/g' ~/.config/fish/conf.d/insulter.fish
+  fi
+
+  if [ ! -f ~/.config/fish/config.fish ]; then
+    cat >~/.config/fish/config.fish <<EOF
+if status is-interactive
+  # Commands to run in interactive sessions can go here
+end
+
+function copyfile
+    xclip -sel c <\$argv
+end
+
+function copypath
+    pwd | xclip -sel c
+end
+
+function copyfilepath
+    set -f file \$(pwd)/\$(basename \$argv[1])
+    if test -e "\$file"
+        echo \$file | xclip -sel c
+    else
+        echo "file \$argv[1] not found."
+    end
+end
+EOF
+  elif ! grep -qw "copyfilepath" ~/.config/fish/config.fish; then
+    cat >>~/.config/fish/config.fish <<EOF
+
+function copyfile
+    xclip -sel c <\$argv
+end
+
+function copypath
+    pwd | xclip -sel c
+end
+
+function copyfilepath
+    set -f file \$(pwd)/\$(basename \$argv[1])
+    if test -e "\$file"
+        echo \$file | xclip -sel c
+    else
+        echo "file \$argv[1] not found."
+    end
+end
+EOF
+  fi
 }
 
 install_shell() {

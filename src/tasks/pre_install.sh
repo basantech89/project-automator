@@ -2,10 +2,10 @@
 
 pre_install() {
   cd $HOME
-  mark_start "Pre-Install" $TITLE
+  mark_start "Pre-Install" -t$TITLE
 
-  if ! sudo -nv >/dev/null 2>&1; then
-    log "${ERROR}" "User $USER is not in sudoers list."
+  if (($(groups | grep -c -w "sudo") != 1)); then
+    log "${ERROR}" "User $USER is not in the sudo group, exiting."
     exit $NOT_SUDO_USER
   fi
 
@@ -24,5 +24,5 @@ pre_install() {
   install_prerequisites
 
   break_line
-  mark_end "Pre-Install" $TITLE
+  mark_end "Pre-Install" -t$TITLE
 }

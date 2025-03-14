@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 . ./src/utils/pkgs.sh
 . ./src/utils/common.sh
 
@@ -5,6 +7,7 @@
 . ./src/assets/colors.sh
 
 . ./src/tasks/pre_install.sh
+. ./src/tasks/post_install.sh
 . ./src/tasks/install.sh
 . ./src/tasks/pre_requisites.sh
 . ./src/tasks/prompts.sh
