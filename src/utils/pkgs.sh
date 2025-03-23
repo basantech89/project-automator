@@ -91,7 +91,7 @@ is_pkg_installed() {
 
   if type -a fish >/dev/null 2>&1 && test $chosen_shell = fish && fish -C "type -a ${1} >/dev/null 2>&1; exit"; then
     test "${2}" = "quiet" && true || log "${INFO}" "Package ${1} is already installed, not installing again."
-  elif type -a $chosen_shell >/dev/null 2>&1 && $chosen_shell -c "type -a ${1} >/dev/null 2>&1"; then
+  elif type -a $chosen_shell >/dev/null 2>&1 && $chosen_shell -ic "type -a ${1} >/dev/null 2>&1"; then
     test "${2}" = "quiet" && true || log "${INFO}" "Package ${1} is already installed, not installing again."
   elif test "$package_manager" = pacman; then
     is_pkg_installed_arch "${@}"
@@ -260,8 +260,20 @@ install_pkgs() {
   fi
 
   if [[ "${package_installer}" == "snap" ]]; then
+    mark_start "Installing Packages ${pkgs_to_install[@]}" -t$PACKAGE
+
     echo "$SUDO_PASSWORD" | sudo -S snap install "${options[@]}" "${pkgs_to_install[@]}"
-    [ $? -eq 0 ] && successful_pkgs+=("${pkgs_to_install[@]}") || failed_pkgs+=("${pkgs_to_install[@]}")
+    if [ $? -eq 0 ]; then
+      successful_pkgs+=("${pkgs_to_install[@]}")
+    else
+      log "${WARN}" "Failed to install packages ${pkgs_to_install[@]}. Retrying after ${WAIT_FOR_SEC_IF_NOT_INSTALLED} second(s)..."
+      sleep $WAIT_FOR_SEC_IF_NOT_INSTALLED
+      echo "$SUDO_PASSWORD" | sudo -S snap install "${options[@]}" "${pkgs_to_install[@]}"
+      [ $? -eq 0 ] && successful_pkgs+=("${pkgs_to_install[@]}") || failed_pkgs+=("${pkgs_to_install[@]}")
+    fi
+
+    mark_end "Installing Packages ${pkgs_to_install[@]}" -t$PACKAGE
+
     return
   fi
 
@@ -298,11 +310,11 @@ source_shell_config() {
   fi
 
   if [ $shell = zsh -a -f ~/.zshrc ]; then
-    source ~/.zshrc
+    $shell -c "source ~/.zshrc"
   fi
 
   if [ $shell = fish -a -f ~/.config/fish/config.fish ]; then
-    source ~/.config/fish/config.fish
+    $shell -c "source ~/.config/fish/config.fish"
   fi
 }
 

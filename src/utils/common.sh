@@ -61,16 +61,44 @@ prompt_variable() {
 
 set_variable() {
   prompt_variable "${1}"
-  local pass="${2}"
+  local value="${2}"
   while read -r response; do
     case "$response" in
     ["Yy"])
-      eval export "${pass}=${prompt_result}"
+      eval export "${value}=${prompt_result}"
       break
       ;;
     *) prompt_variable "${1}" ;;
     esac
   done
+}
+
+set_input_variable() {
+  local value=$(dialog --clear --stdout --backtitle "$3" --inputbox "$2" 0 0)
+  clear
+
+  log "${INFO}" "You provided ${value} as the input."
+  log "${PROMPT}" "Press y|Y if this is correct. Press any other key to try again"
+  while read -r response; do
+    case "$response" in
+    ["Yy"])
+      eval export "${1}=${value}"
+      break
+      ;;
+    *)
+      set_input_variable "${@}"
+      break
+      ;;
+    esac
+  done
+}
+
+is_font_installed() {
+  if fc-list | grep -i "$1" >/dev/null 2>&1; then
+    return "${RESOLVED}"
+  else
+    return "${FONT_NOT_INSTALLED}"
+  fi
 }
 
 install_nerd_fonts() {
@@ -85,8 +113,8 @@ install_nerd_fonts() {
 
     if [[ $this_element == "-s" ]]; then
       local font_to_look="${next_element}"
-      if fc-list | grep -i "${font_to_look}" >/dev/null 2>&1; then
-        log "${INFO}" "Font ${font} is already installed."
+      if is_font_installed "${font_to_look}"; then
+        log "${INFO}" "Font ${font_to_look} is already installed."
         shift 3
       else
         fonts_to_install+=("${next_next_element}")
@@ -119,11 +147,24 @@ install_nerd_fonts() {
       log "${INFO}" "Downloaded ${zip_file} successfully."
     else
       log "${ERROR}" "Failed to download ${zip_file}."
-      return "${FONT_NOT_INSTALLEd}"
+      return "${FONT_NOT_INSTALLED}"
     fi
 
     unzip "/tmp/$zip_file" -d "/tmp/${font}"
-    mv /tmp/${font}/*.ttf "$fonts_dir"
+
+    if find "/tmp/${font}/" -type f -name '*.ttf' | grep ttf; then
+      mv /tmp/${font}/*.ttf "$fonts_dir"
+    elif find "/tmp/${font}/" -type f -name '*.otf' | grep otf; then
+      mv /tmp/${font}/*.otf "$fonts_dir"
+    elif find "/tmp/${font}/" -type f -name '*.woff' | grep woff; then
+      mv /tmp/${font}/*.woff "$fonts_dir"
+    elif find "/tmp/${font}/" -type f -name '*.woff2' | grep woff2; then
+      mv /tmp/${font}/*.woff2 "$fonts_dir"
+    else
+      log "${ERROR}" "No font files found in ${font}."
+      return "${FONT_NOT_INSTALLED}"
+    fi
+
     rm -rf "/tmp/${font}"
     rm "/tmp/$zip_file"
   done
@@ -170,13 +211,27 @@ validate_version() {
 }
 
 add_to_path() {
-  if ! echo $PATH | grep -q "$1"; then
+  if ! $shell -c "echo $PATH | grep -q $1"; then
     if [[ "$shell" = "bash" ]]; then
-      bash -c "export PATH=\"$PATH:$1\""
+      if ! grep -q "export PATH=\"\$PATH:.*$1.*\"$" ~/.bashrc; then
+        if ! grep -q "export PATH=\"" ~/.bashrc; then
+          echo -e "\nexport PATH=\"\$PATH:$1\"" >>$HOME/.bashrc
+        else
+          sed -i -e "/export PATH=\"\$PATH:\/.*\"/ s/.$//" $HOME/.bashrc
+          sed -i -e "/export PATH=\"\$PATH:.*/ s/$/:${1}\"/" $HOME/.bashrc
+        fi
+      fi
     elif [[ "$shell" = "zsh" ]]; then
-      zsh -c "export PATH=\"$PATH:$1\""
+      if ! grep -q "export PATH=\"\$PATH:.*$1.*\"$" ~/.zshrc; then
+        if ! grep -q "export PATH=\"" ~/.zshrc; then
+          echo -e "\nexport PATH=\"\$PATH:$1\"" >>$HOME/.zshrc
+        else
+          sed -i -e "/export PATH=\"\$PATH:\/.*\"/ s/.$//" $HOME/.zshrc
+          sed -i -e "/export PATH=\"\$PATH:.*/ s/$/:${1}\"/" $HOME/.zshrc
+        fi
+      fi
     elif [[ "$shell" = "fish" ]]; then
-      fish -c "set -U fish_user_paths $1 $fish_user_paths"
+      fish -C "fish_add_path $1; exit"
     fi
   fi
 }

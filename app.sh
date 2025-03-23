@@ -3,6 +3,7 @@
 . ./src/exports.sh
 
 main() {
+  rm -f main.log main_error.log
   pre_install
   install
   post_install

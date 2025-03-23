@@ -9,14 +9,20 @@ install_neovim() {
     if validate_version 0.8.0 neovim; then
       install_pkgs neovim
     else
+      mark_start "Installing Package nvim" -t$PACKAGE
+
       curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz
       echo "$SUDO_PASSWORD" | sudo -S rm -rf /opt/nvim*
       echo "$SUDO_PASSWORD" | sudo -S tar -C /opt -xzf nvim-linux-x86_64.tar.gz
       rm nvim-linux-x86_64.tar.gz
       add_to_path /opt/nvim-linux-x86_64/bin
-    fi
+      source_shell_config
 
-    install_dot neovim
+      [ $? -eq 0 ] && successful_pkgs+=('nvim') || failed_pkgs+=('nvim')
+      install_dot neovim
+
+      mark_end "Installing Package nvim" -t$PACKAGE
+    fi
   fi
 
   abbrs[vim]=nvim
@@ -30,6 +36,7 @@ install_warp_terminal() {
 Server = https://releases.warp.dev/linux/pacman/\$repo/\$arch
 EOF
       install_pkgs warp-terminal
+      install_dot warp ~/.config/warp-terminal
     elif [ "$package_manager" = 'apt-get' ]; then
       wget -qO- https://releases.warp.dev/linux/keys/warp.asc | gpg --dearmor >warpdotdev.gpg
       echo "$SUDO_PASSWORD" | sudo -S install -D -o root -g root -m 644 warpdotdev.gpg /etc/apt/keyrings/warpdotdev.gpg
@@ -38,11 +45,11 @@ EOF
 
       update_system quiet
       install_pkgs warp-terminal
+      install_dot warp ~/.config/warp-terminal
     elif [ "$package_manager" = 'brew' ]; then
       install_pkgs --cask warp
+      install_dot warp ~/.config/warp-terminal
     fi
-
-    install_dot warp ~/.config/warp-terminal
   fi
 }
 
@@ -50,18 +57,30 @@ install_nvm() {
   mark_start "Installing Packages nvm" -t$PACKAGE
 
   curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+
   if [ $shell = bash ]; then
-    cat >>~/.bashrc <<EOF
+    if ! grep -q "export NVM_DIR" ~/.bashrc; then
+      cat >>~/.bashrc <<EOF
+
 export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm
+[ -s "\$NVM_DIR/nvm.sh" ] && \. "\$NVM_DIR/nvm.sh" # This loads nvm
+[ -s "\$NVM_DIR/bash_completion" ] && \. "\$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 EOF
+      source_shell_config
+    fi
   fi
 
   if [ $shell = zsh ]; then
-    cat >>~/.zshrc <<EOF
+    if ! grep -q "export NVM_DIR" ~/.zshrc; then
+      cat >>~/.zshrc <<EOF
+
 export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm
+[ -s "\$NVM_DIR/nvm.sh" ] && \. "\$NVM_DIR/nvm.sh" # This loads nvm
+[ -s "\$NVM_DIR/bash_completion" ] && \. "\$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
 EOF
+      source_shell_config
+    fi
   fi
 
   if [ $shell = fish ]; then
@@ -69,41 +88,41 @@ EOF
   fi
 
   [ $? -eq 0 ] && successful_pkgs+=('nvm') || failed_pkgs+=('nvm')
-  source_shell_config
 
   mark_end "Installing Packages nvm" -t$PACKAGE
 }
 
 install_node_with_nvm() {
-  mark_start "Installing Packages node ${node_version}" -t$PACKAGE
+  if is_pkg_installed nvm; then
+    mark_start "Installing Packages node ${node_version}" -t$PACKAGE
 
-  $shell -c "nvm install ${node_version}"
+    $shell -ic "nvm install ${node_version}"
 
-  if [ $shell = fish ]; then
-    fish -c "set --universal nvm_default_version ${node_version}"
+    if [ $shell = fish ]; then
+      fish -c "set --universal nvm_default_version ${node_version}"
+    else
+      $shell -ic "nvm alias default ${node_version} && nvm use default"
+    fi
+
+    if test $shell = fish; then
+      fish -C "npm i -g pnpm yarn nx; exit;"
+    else
+      $shell -ic "npm i -g pnpm yarn nx"
+    fi
+
+    [ $? -eq 0 ] && successful_pkgs+=("node") || failed_pkgs+=('node')
+
+    mark_end "Installing Packages node ${node_version}" -t$PACKAGE
   else
-    $shell -c "
-        nvm alias default ${node_version}
-        nvm use default
-      "
+    failed_pkgs+=('node')
   fi
-
-  if test $shell = fish; then
-    fish -C "npm i -g pnpm yarn nx; exit;"
-  else
-    $shell -c "npm i -g pnpm yarn nx"
-  fi
-
-  [ $? -eq 0 ] && successful_pkgs+=("node") || failed_pkgs+=('node')
-
-  mark_end "Installing Packages node ${node_version}" -t$PACKAGE
 }
 
 install_node() {
   if ! is_pkg_installed nvm; then
     install_nvm
     install_node_with_nvm
-  elif (($($shell -c "nvm list v${node_version} | grep -ic v${node_version}") != 1)); then
+  elif (($($shell -ic "nvm list v${node_version} | grep -ic v${node_version}") != 1)); then
     install_node_with_nvm
   else
     log "${INFO}" "Package node ${node_version} is already installed, not installing again."
@@ -111,8 +130,30 @@ install_node() {
   fi
 }
 
+install_maple_mono() {
+  if ! is_font_installed maple; then
+    wget https://github.com/subframe7536/maple-font/releases/download/v7.0/MapleMono-NF.zip -O maple-nf.zip
+    unzip maple-nf.zip
+    mv *.ttf ~/.local/share/fonts
+    fc-cache -fv
+    rm -f maple-nf.zip
+  fi
+}
+
+set_terminal_font() {
+  if [ $package_manager = 'apt-get' ]; then
+    if is_pkg_installed gsettings; then
+      local profile=$(gsettings get org.gnome.Terminal.ProfilesList default | tr -d "'")
+      gsettings set org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$profile/ use-system-font false
+      gsettings set org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$profile/ font "$1"
+    fi
+  fi
+}
+
 install_fonts() {
-  install_nerd_fonts -s CaskaydiaMono "CascadiaMono"
+  install_nerd_fonts -s CaskaydiaMono "CascadiaMono" -s Terminess Terminus -s ComicShanns ComicShannsMono
+  install_maple_mono
+  set_terminal_font "ComicShannsMono Nerd Font 14"
 }
 
 install_starship() {
@@ -120,17 +161,17 @@ install_starship() {
     mark_start "Install Starship" -t$PACKAGE
 
     curl -sS https://starship.rs/install.sh | sh -s -- -y
-    [ $? -eq 0 ] && successful_pkgs+=('starship') || failed_pkgs+=('starship')
+    [ $? -eq 0 ] && {
+      install_dot starship
 
-    install_dot starship
-
-    if test $shell = fish; then
-      sed -i '$ a\\nstarship init fish | source' ~/.config/fish/config.fish
-    elif test $shell = bash; then
-      sed -i '$ a\\neval "$(starship init bash)"' ~/.bashrc
-    elif test $shell = zsh; then
-      sed -i '$ a\\neval "$(starship init zsh)"' ~/.zshrc
-    fi
+      if test $shell = fish; then
+        sed -i '$ a\\nstarship init fish | source' ~/.config/fish/config.fish
+      elif test $shell = bash; then
+        sed -i '$ a\\neval "$(starship init bash)"' ~/.bashrc
+      elif test $shell = zsh; then
+        sed -i '$ a\\neval "$(starship init zsh)"' ~/.zshrc
+      fi
+    } || failed_pkgs+=('starship')
 
     mark_end "Install Starship" -t$PACKAGE
   fi
@@ -213,48 +254,51 @@ install_docker() {
       install_pkgs docker-compose
     fi
 
-    [ $? -eq 0 ] && successful_pkgs+=('docker') || failed_pkgs+=('docker')
+    [ $? -eq 0 ] && {
+      successful_pkgs+=('docker')
+      echo "$SUDO_PASSWORD" | sudo -S systemctl start docker
+      echo "$SUDO_PASSWORD" | sudo -S systemctl enable docker
+      echo "$SUDO_PASSWORD" | sudo -S groupadd docker
+      echo "$SUDO_PASSWORD" | sudo -S usermod -aG docker ${USER}
 
-    echo "$SUDO_PASSWORD" | sudo -S systemctl start docker
-    echo "$SUDO_PASSWORD" | sudo -S systemctl enable docker
-    echo "$SUDO_PASSWORD" | sudo -S groupadd docker
-    echo "$SUDO_PASSWORD" | sudo -S usermod -aG docker ${USER}
-  fi
-
-  if test $shell = bash; then
-    if [ "$package_manager" = 'apt-get' -o "$package_manager" = 'pacman' ]; then
-      if ! grep -q "bash_completion" ~/.bashrc; then
-        cat <<EOT >>~/.bashrc
+      if test $shell = bash; then
+        if [ "$package_manager" = 'apt-get' -o "$package_manager" = 'pacman' ]; then
+          if ! grep -q "bash_completion" ~/.bashrc; then
+            cat <<EOT >>~/.bashrc
 if [ -f /etc/bash_completion ]; then
     . /etc/bash_completion
 fi
 EOT
-      fi
-    elif [ "$package_manager" = 'brew' ]; then
-      if ! grep -q "bash_completion" ~/.bash_profile; then
-        cat <<EOT >>~/.bash_profile
+          fi
+        elif [ "$package_manager" = 'brew' ]; then
+          if ! grep -q "bash_completion" ~/.bash_profile; then
+            cat <<EOT >>~/.bash_profile
 [[ -r "\$(brew --prefix)/etc/profile.d/bash_completion.sh" ]] && . "$(brew --prefix)/etc/profile.d/bash_completion.sh"
 EOT
-      fi
-    fi
+          fi
+        fi
 
-    if [ ! -f ~/.local/share/bash-completion/completions/docker ]; then
-      mkdir -p ~/.local/share/bash-completion/completions
-      docker completion bash >~/.local/share/bash-completion/completions/docker
-    fi
-  elif test $shell = zsh; then
-    if [ ! -f ~/.oh-my-zsh/completions/_docker ]; then
-      mkdir -p ~/.oh-my-zsh/completions
-      docker completion zsh >~/.oh-my-zsh/completions/_docker
-    fi
-  elif test $shell = fish; then
-    if [ ! -f ~/.config/fish/completions/docker.fish ]; then
-      mkdir -p ~/.config/fish/completions
-      docker completion fish >~/.config/fish/completions/docker.fish
-    fi
+        if [ ! -f ~/.local/share/bash-completion/completions/docker ]; then
+          mkdir -p ~/.local/share/bash-completion/completions
+          docker completion bash >~/.local/share/bash-completion/completions/docker
+        fi
+      elif test $shell = zsh; then
+        if [ ! -f ~/.oh-my-zsh/completions/_docker ]; then
+          mkdir -p ~/.oh-my-zsh/completions
+          docker completion zsh >~/.oh-my-zsh/completions/_docker
+        fi
 
-    if [ ! -f ~/.config/fish/conf.d/docker.fish ]; then
-      cat >>~/.config/fish/conf.d/docker.fish <<EOF
+        if ! grep -q docker ~/.zshrc; then
+          sed -i -z -e 's/plugins=(\n\tgit/plugins=(\n\tgit\n\tdocker/' ~/.zshrc
+        fi
+      elif test $shell = fish; then
+        if [ ! -f ~/.config/fish/completions/docker.fish ]; then
+          mkdir -p ~/.config/fish/completions
+          docker completion fish >~/.config/fish/completions/docker.fish
+        fi
+
+        if [ ! -f ~/.config/fish/conf.d/docker.fish ]; then
+          cat >>~/.config/fish/conf.d/docker.fish <<EOF
 #!/usr/bin/env fish
 #
 # Copyright (c) 2020 Rich Lewis and François VANTOMME
@@ -451,7 +495,9 @@ function dbash -d "bash into running container"
   docker exec -it (docker ps -aqf "name=$argv[1]") bash
 end
 EOF
-    fi
+        fi
+      fi
+    } || failed_pkgs+=('docker')
   fi
 }
 
@@ -481,11 +527,12 @@ install_aws_cli() {
     fi
   fi
 
-  if test $shell = 'fish'; then
-    fish -C "complete --command aws --no-files --arguments '(begin; set --local --export COMP_SHELL fish; set --local --export COMP_LINE (commandline); aws_completer | sed \'s/ $//\'; end)';exit"
+  if [ $? -eq 0 ]; then
+    if test $shell = 'fish'; then
+      fish -C "complete --command aws --no-files --arguments '(begin; set --local --export COMP_SHELL fish; set --local --export COMP_LINE (commandline); aws_completer | sed \'s/ $//\'; end)';exit"
 
-    if [ ! -f ~/.config/fish/functions/aws.fish ]; then
-      cat >~/.config/fish/functions/aws.fish <<EOF
+      if [ ! -f ~/.config/fish/functions/aws.fish ]; then
+        cat >~/.config/fish/functions/aws.fish <<EOF
 function aws_checks
     if test -z \$AWS_PROFILE
         echo "AWS_PROFILE is not set."
@@ -557,6 +604,7 @@ function ssm
     echo \$value | xclip -sel c
 end
 EOF
+      fi
     fi
   fi
 }

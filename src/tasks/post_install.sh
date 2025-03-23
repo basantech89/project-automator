@@ -27,14 +27,14 @@ add_abbreviations() {
 
   for abbr in "${!abbrs[@]}"; do
     if [ "$shell" = bash ]; then
-      if ! grep -q "$abbr" $HOME/.bashrc; then
-        echo alias $abbr="${abbrs[$abbr]}" >>$HOME/.bashrc
+      if ! grep -q "alias $abbr" $HOME/.bashrc; then
+        echo alias $abbr="\"${abbrs[$abbr]}\"" >>$HOME/.bashrc
       fi
     fi
 
     if [ "$shell" = zsh ]; then
-      if ! grep -q "$abbr" $HOME/.zshrc; then
-        echo alias $abbr="${abbrs[$abbr]}" >>$HOME/.bashrc
+      if ! grep -q "alias $abbr" $HOME/.zshrc; then
+        echo alias $abbr="\"${abbrs[$abbr]}\"" >>$HOME/.zshrc
       fi
     fi
 
@@ -67,11 +67,16 @@ add_abbreviations() {
 install_colorls() {
   if ! is_pkg_installed colorls; then
     mark_start "Install Colorls" -t$PACKAGE
+
     install_pkgs ruby ruby-dev
     echo "$SUDO_PASSWORD" | sudo -S gem install colorls
 
-    if ! test $shell = fish; then
-      echo -e "\nsource $(dirname $(gem which colorls))/tab_complete.sh" >>"~/.{$shell}rc"
+    if [ $? -eq 0 ]; then
+      if test $shell = bash; then
+        echo -e "\nsource $(dirname $(gem which colorls))/tab_complete.sh" >>"~/.bashrc"
+      elif test $shell = zsh; then
+        echo -e "\nsource $(dirname $(gem which colorls))/tab_complete.sh" >>"~/.zshrc"
+      fi
     fi
 
     mark_end "Install Colorls" -t$PACKAGE
@@ -99,7 +104,8 @@ install_zoxide() {
     mark_start "Install Zoxide" -t$PACKAGE
 
     mkdir -p ~/.local/bin
-    add_to_path "$HOME/.local/bin"
+    add_to_path "\$HOME\/.local\/bin"
+    source_shell_config
 
     if [ "$package_manager" = 'brew' ]; then
       install_pkgs zoxide
@@ -107,12 +113,14 @@ install_zoxide() {
       curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh
     fi
 
-    if [ "$shell" = fish ]; then
-      echo -e "\nzoxide init fish | source" >>$HOME/.config/fish/config.fish
-    elif [ "$shell" = bash ]; then
-      echo -e "\n eval \"\$(zoxide init bash)\"" >>$HOME/.bashrc
-    elif [ "$shell" = zsh ]; then
-      echo "\n eval \"\$(zoxide init zsh)\"" >>$HOME/.zshrc
+    if [ $? -eq 0 ]; then
+      if [ "$shell" = fish ]; then
+        echo -e "\nzoxide init fish | source\n" >>$HOME/.config/fish/config.fish
+      elif [ "$shell" = bash ]; then
+        echo -e "\neval \"\$(zoxide init bash)\"\n" >>$HOME/.bashrc
+      elif [ "$shell" = zsh ]; then
+        echo -e "\neval \"\$(zoxide init zsh)\"\n" >>$HOME/.zshrc
+      fi
     fi
 
     mark_end "Install Zoxide" -t$PACKAGE

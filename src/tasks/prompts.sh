@@ -79,7 +79,7 @@ select_tools() {
 
   if [[ $node = true ]]; then
     if ! is_pkg_installed nvm || ! is_pkg_installed node; then
-      node_version=$(dialog --clear --stdout --backtitle "Node Version" --inputbox "Enter the node version you want to install; type lts for the latest stable release; e.g. 20, lts:" 0 0)
+      set_input_variable "node_version" "Enter the node version you want to install; type lts for the latest stable release; e.g. 20, lts:" "Node Version"
     fi
   fi
 

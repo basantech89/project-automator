@@ -1,40 +1,70 @@
 #!/usr/bin/env bash
 
-install_shell_zsh() {
-  install_pkgs zsh
+install_shell_bash() {
+  if [ ! -f /etc/bash.command-not-found ]; then
+    sudo wget -O /etc/bash.command-not-found https://raw.githubusercontent.com/hkbakke/bash-insulter/master/src/bash.command-not-found
+  fi
 
-  sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
-  git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k
+  if ! grep -q "bash.command-not-found" ~/.bashrc; then
+    cat <<EOT >>~/.bashrc
 
-  git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
-  git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
-  sed -i "/ZSH_THEME=\"robbyrussell\"/ s/robbyrussell/powerlevel10k\/powerlevel10k/" ~/.zshrc
+eval "$(stack --bash-completion-script stack)"
 
-  sed -i "/plugins=(git)/ a\\\tgit\n\thistory\n\thistory-substring-search\n\tcolored-man-pages\n\tzsh-autosuggestions\n\tzsh-syntax-highlighting\n\tzsh-completions\n\tcopyfile\n\tcopypath\n\tcopybuffer\n\tz\n\tgitignore\n\tnpm\n\tsudo\n\tsystemadmin\n\tyarn\n\tweb-search\n\tssh\n\turltools\n)" ~/.zshrc
-  sed -i "/plugins=(git)/ s/git)//" ~/.zshrc
+if [ -f /etc/bash.command-not-found ]; then
+    . /etc/bash.command-not-found
+fi
+EOT
+  fi
 
   if [ "$package_manager" = 'brew' ]; then
-    if ! grep -q "bash_completion" ~/.zshrc; then
-      cat <<EOT >>~/.zshrc
+    if ! grep -q "bash_completion" ~/.bashrc; then
+      cat >>~/.bashrc <<EOF
+
 [[ -r "$(brew --prefix)/etc/profile.d/bash_completion.sh" ]] && . "$(brew --prefix)/etc/profile.d/bash_completion.sh"
-EOT
+EOF
     fi
   else
     if ! grep -q "bash_completion" ~/.zshrc; then
-      cat <<EOT >>~/.zshrc
+      cat <<EOT >>~/.bashrc
+
+eval "$(stack --bash-completion-script stack)"
+
 if [ -f /etc/bash_completion ]; then
     . /etc/bash_completion
 fi
 EOT
     fi
   fi
+}
+
+install_shell_zsh() {
+  install_pkgs zsh
+
+  if [ ! -d ~/.oh-my-zsh ]; then
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+  fi
+
+  if ! grep -q powerlevel10k ~/.zshrc; then
+    git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k
+
+    git clone https://github.com/zsh-users/zsh-completions ${ZSH_CUSTOM:-${ZSH:-~/.oh-my-zsh}/custom}/plugins/zsh-completions
+    sed -i '/source \$ZSH\/oh-my-zsh.sh/i fpath+=${ZSH_CUSTOM:-${ZSH:-~/.oh-my-zsh}/custom}/plugins/zsh-completions/src' ~/.zshrc
+
+    git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
+    git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
+    sed -i "/ZSH_THEME=\"robbyrussell\"/ s/robbyrussell/powerlevel10k\/powerlevel10k/" ~/.zshrc
+
+    sed -i "/plugins=(git)/ a\\\tgit\n\thistory\n\thistory-substring-search\n\tcolored-man-pages\n\tzsh-autosuggestions\n\tzsh-syntax-highlighting\n\tcopyfile\n\tcopypath\n\tcopybuffer\n\tgitignore\n\tnpm\n\tsudo\n\tsystemadmin\n\tyarn\n\tweb-search\n\tssh\n\turltools\n)" ~/.zshrc
+    sed -i "/plugins=(git)/ s/git)//" ~/.zshrc
+  fi
 
   if [ ! -f /etc/bash.command-not-found ]; then
     sudo wget -O /etc/bash.command-not-found https://raw.githubusercontent.com/hkbakke/bash-insulter/master/src/bash.command-not-found
   fi
 
-  if ! grep -q "bash.command-not-found"; then
+  if ! grep -q "bash.command-not-found" ~/.zshrc; then
     cat <<EOT >>~/.zshrc
+
 if [ -f /etc/bash.command-not-found ]; then
     . /etc/bash.command-not-found
 fi
