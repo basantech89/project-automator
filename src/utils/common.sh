@@ -141,7 +141,7 @@ install_nerd_fonts() {
   for font in "${fonts_to_install[@]}"; do
     local zip_file="${font}.zip"
     local download_url="https://github.com/ryanoasis/nerd-fonts/releases/download/${version}/${zip_file}"
-    wget -O "/tmp/$zip_file" "$download_url" >/dev/null 2>&1
+    retry_if_failed wget -O "/tmp/$zip_file" "$download_url" >/dev/null 2>&1
 
     if [ -f "/tmp/$zip_file" ]; then
       log "${INFO}" "Downloaded ${zip_file} successfully."
@@ -234,4 +234,49 @@ add_to_path() {
       fish -C "fish_add_path $1; exit"
     fi
   fi
+}
+
+retry_if_failed() {
+  local attempt=1
+  local max_attempts=3
+  local delay=2
+
+  local arg_list=("$@")
+  for i in "${!arg_list[@]}"; do
+    local this_element="${arg_list[i]}"
+    local next_element="${arg_list[i + 1]}"
+
+    if [[ "$this_element" == "--delay" ]]; then
+      delay="${next_element:-2}"
+      shift 2
+    elif [[ "$this_element" == "--max-attempts" ]]; then
+      max_attempts="${next_element:-3}"
+      shift 2
+    elif [[ "$this_element" == "--exit-failed" ]]; then
+      local should_exit_if_failed=true
+      shift 1
+    fi
+  done
+
+  while [[ $attempt -le $max_attempts ]]; do
+    if "$@"; then
+      break
+    fi
+
+    log "${WARN}" "Attempted $attempt times, Max attempts $max_attempts."
+    if [[ $attempt -eq $max_attempts ]]; then
+      log "${ERROR}" "Failed to execute command ${@} after $max_attempts attempts."
+
+      if [[ -n $should_exit_if_failed ]]; then
+        exit $COMMAND_EXEC_FAILED
+      else
+        break
+      fi
+    fi
+
+    log "${INFO}" "Command ${@} failed. Retrying in $delay seconds..."
+    attempt=$((attempt + 1))
+    sleep $delay
+    delay=$((delay * 2))
+  done
 }

@@ -73,9 +73,9 @@ install_colorls() {
 
     if [ $? -eq 0 ]; then
       if test $shell = bash; then
-        echo -e "\nsource $(dirname $(gem which colorls))/tab_complete.sh" >>"~/.bashrc"
+        echo -e "\nsource $(dirname $(gem which colorls))/tab_complete.sh" >>~/.bashrc
       elif test $shell = zsh; then
-        echo -e "\nsource $(dirname $(gem which colorls))/tab_complete.sh" >>"~/.zshrc"
+        echo -e "\nsource $(dirname $(gem which colorls))/tab_complete.sh" >>~/.zshrc
       fi
     fi
 
@@ -110,7 +110,7 @@ install_zoxide() {
     if [ "$package_manager" = 'brew' ]; then
       install_pkgs zoxide
     elif [ "$package_manager" = 'apt-get' ]; then
-      curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh
+      retry_if_failed curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh
     fi
 
     if [ $? -eq 0 ]; then
@@ -130,6 +130,10 @@ install_zoxide() {
 install_utilities() {
   mark_start "Install Utilities" -t$TITLE
 
+  install_colorls
+  install_appimage_launcher
+  install_zoxide
+
   install_pkgs ncdu peco safe-rm plocate highlight ripgrep
 
   if [ "$package_manager" = brew ]; then
@@ -138,10 +142,17 @@ install_utilities() {
     install_pkgs fortune-mod
   fi
 
-  install_colorls
-  install_appimage_launcher
-  install_zoxide
-
+  if [ $shell = bash ]; then
+    sed -i '1s;^;fortune -s | cowsay -f `ls -1 /usr/share/cowsay/cows/*.cow | sort -R | head -1` | lolcat\n;' ~/.bashrc
+  # elif [ $shell = zsh ]; then
+  #   sed -i '1s;^;fortune -s | cowsay -f `ls -1 /usr/share/cowsay/cows/*.cow | sort -R | head -1` | lolcat\n;' ~/.zshrc
+  elif [ $shell = fish ]; then
+    cat >~/.config/fish/functions/fish_greeting.fish <<EOF
+function fish_greeting
+    fortune -s | cowsay -f $(ls /usr/share/cowsay/cows/ | shuf -n1) | lolcat
+end
+EOF
+  fi
   mark_end "Install Utilities" -t$TITLE
 }
 

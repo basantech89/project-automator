@@ -11,7 +11,7 @@ install_neovim() {
     else
       mark_start "Installing Package nvim" -t$PACKAGE
 
-      curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz
+      retry_if_failed curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz
       echo "$SUDO_PASSWORD" | sudo -S rm -rf /opt/nvim*
       echo "$SUDO_PASSWORD" | sudo -S tar -C /opt -xzf nvim-linux-x86_64.tar.gz
       rm nvim-linux-x86_64.tar.gz
@@ -56,7 +56,7 @@ EOF
 install_nvm() {
   mark_start "Installing Packages nvm" -t$PACKAGE
 
-  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+  retry_if_failed curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
 
   if [ $shell = bash ]; then
     if ! grep -q "export NVM_DIR" ~/.bashrc; then
@@ -106,8 +106,9 @@ install_node_with_nvm() {
 
     if test $shell = fish; then
       fish -C "npm i -g pnpm yarn nx; exit;"
-    else
-      $shell -ic "npm i -g pnpm yarn nx"
+      # else
+      # below somehow causes the script to exit
+      # $shell -ic "npm i -g pnpm yarn nx"
     fi
 
     [ $? -eq 0 ] && successful_pkgs+=("node") || failed_pkgs+=('node')
@@ -132,7 +133,7 @@ install_node() {
 
 install_maple_mono() {
   if ! is_font_installed maple; then
-    wget https://github.com/subframe7536/maple-font/releases/download/v7.0/MapleMono-NF.zip -O maple-nf.zip
+    retry_if_failed wget https://github.com/subframe7536/maple-font/releases/download/v7.0/MapleMono-NF.zip -O maple-nf.zip
     unzip maple-nf.zip
     mv *.ttf ~/.local/share/fonts
     fc-cache -fv
@@ -160,7 +161,7 @@ install_starship() {
   if ! is_pkg_installed starship; then
     mark_start "Install Starship" -t$PACKAGE
 
-    curl -sS https://starship.rs/install.sh | sh -s -- -y
+    retry_if_failed curl -sS https://starship.rs/install.sh | sh -s -- -y
     [ $? -eq 0 ] && {
       install_dot starship
 
@@ -194,7 +195,7 @@ install_vscode() {
     if [ "$package_manager" = 'pacman' ]; then
       install_pkgs visual-studio-code-bin
     elif [ "$package_manager" = 'apt-get' ]; then
-      wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor >/tmp/packages.microsoft.gpg
+      retry_if_failed wget -O- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor >/tmp/packages.microsoft.gpg
       echo "$SUDO_PASSWORD" | sudo -S install -D -o root -g root -m 644 /tmp/packages.microsoft.gpg /etc/apt/keyrings/packages.microsoft.gpg
       echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" | sudo tee /etc/apt/sources.list.d/vscode.list >/dev/null
       rm -f /tmp/packages.microsoft.gpg
@@ -217,7 +218,7 @@ install_postman() {
       mark_start "Installing Postman" -t$PACKAGE
 
       echo "$SUDO_PASSWORD" | sudo -S rm -rf /opt/Postman
-      tar -C /tmp/ -xzf <(curl -L https://dl.pstmn.io/download/latest/linux64) && echo "$SUDO_PASSWORD" | sudo -S mv /tmp/Postman /opt/
+      retry_if_failed tar -C /tmp/ -xzf <(curl -L https://dl.pstmn.io/download/latest/linux64) && echo "$SUDO_PASSWORD" | sudo -S mv /tmp/Postman /opt/
       echo "$SUDO_PASSWORD" | sudo -S ln -s /opt/Postman/Postman /usr/bin/postman
       echo "$SUDO_PASSWORD" | sudo -S tee -a /usr/share/applications/postman.desktop <<END
 [Desktop Entry]
@@ -245,8 +246,8 @@ install_docker() {
       echo "$SUDO_PASSWORD" | sudo -S tee /etc/modules-load.d/loop.conf <<<"loop" # enable the loop module
       modprobe loop
       install_pkgs docker docker-compose
-    elif [ "$package_manager" = 'apt-get' ]; then
-      curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+    elif test $package_manager = apt-get; then
+      retry_if_failed curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
       add_apt_repo "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
       install_pkgs docker-ce
     elif [ "$package_manager" = 'brew' ]; then
@@ -504,7 +505,7 @@ EOF
 install_dbeaver() {
   if ! is_pkg_installed dbeaver; then
     if [ "$package_manager" = 'pacman' ]; then
-      wget -qO- https://dbeaver.io/files/dbeaver-ce-latest-linux.gtk.x86_64.tar.gz | gunzip | tar xvf - -C /opt/dbeaver
+      retry_if_failed wget -O- https://dbeaver.io/files/dbeaver-ce-latest-linux.gtk.x86_64.tar.gz | gunzip | tar xvf - -C /opt/dbeaver
       echo "$SUDO_PASSWORD" | sudo -S ln -s /opt/dbeaver/dbeaver /usr/bin/dbeaver
       [ $? -eq 0 ] && successful_pkgs+=('dbeaver') || failed_pkgs+=('dbeaver')
 

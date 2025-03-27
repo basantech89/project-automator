@@ -107,8 +107,6 @@ is_pkg_installed() {
   } || return "${PKG_NOT_INSTALLED}"
 }
 
-WAIT_FOR_SEC_IF_NOT_INSTALLED=2
-
 install_pkgs_arch() {
   local options=()
   local pacman_packages=()
@@ -131,27 +129,13 @@ install_pkgs_arch() {
   done
 
   if [ ${#pacman_packages[@]} -ne 0 ]; then
-    echo "$SUDO_PASSWORD" | sudo -S pacman -S "${pacman_packages[@]}" "${options[@]}" --needed --noconfirm
-    if [ $? -eq 0 ]; then
-      successful_pkgs+=("${pacman_packages[@]}")
-    else
-      log "${ERROR}" "Failed to install packages ${pacman_packages[@]}. Retrying after ${WAIT_FOR_SEC_IF_NOT_INSTALLED} second(s)..."
-      sleep $WAIT_FOR_SEC_IF_NOT_INSTALLED
-      echo "$SUDO_PASSWORD" | sudo -S pacman -S "${pacman_packages[@]}" "${options[@]}" --needed --noconfirm
-      [ $? -eq 0 ] && successful_pkgs+=("${pacman_packages[@]}") || failed_pkgs+=("${pacman_packages[@]}")
-    fi
+    retry_if_failed echo "$SUDO_PASSWORD" | sudo -S pacman -S "${pacman_packages[@]}" "${options[@]}" --needed --noconfirm
+    [ $? -eq 0 ] && successful_pkgs+=("${pacman_packages[@]}") || failed_pkgs+=("${pacman_packages[@]}")
   fi
 
   if [ ${#aur_packages[@]} -ne 0 ]; then
-    echo "$SUDO_PASSWORD" | paru -Sy "${aur_packages[@]}" "${options[@]}" --removemake --cleanafter --needed --noconfirm --norebuild --noredownload --skipreview
-    if [ $? -eq 0 ]; then
-      successful_pkgs+=("${aur_packages[@]}")
-    else
-      log "${ERROR}" "Failed to install packages ${aur_packages[@]}. Retrying after ${WAIT_FOR_SEC_IF_NOT_INSTALLED} second(s)..."
-      sleep $WAIT_FOR_SEC_IF_NOT_INSTALLED
-      echo "$SUDO_PASSWORD" | paru -Sy "${aur_packages[@]}" "${options[@]}" --removemake --cleanafter --needed --noconfirm --norebuild --noredownload --skipreview
-      [ $? -eq 0 ] && successful_pkgs+=("${aur_packages[@]}") || failed_pkgs+=("${aur_packages[@]}")
-    fi
+    retry_if_failed echo "$SUDO_PASSWORD" | paru -Sy "${aur_packages[@]}" "${options[@]}" --removemake --cleanafter --needed --noconfirm --norebuild --noredownload --skipreview
+    [ $? -eq 0 ] && successful_pkgs+=("${aur_packages[@]}") || failed_pkgs+=("${aur_packages[@]}")
   fi
 
   if [ ${#failed_arch_packages[@]} -ne 0 ]; then
@@ -179,15 +163,8 @@ install_pkgs_apt() {
   done
 
   if [ ${#packages[@]} -ne 0 ]; then
-    echo "$SUDO_PASSWORD" | sudo -S apt-get install -y "${packages[@]}" "${options[@]}"
-    if [ $? -eq 0 ]; then
-      successful_pkgs+=("${packages[@]}")
-    else
-      log "${ERROR}" "Failed to install packages ${packages[@]}. Retrying after ${WAIT_FOR_SEC_IF_NOT_INSTALLED} second(s)..."
-      sleep $WAIT_FOR_SEC_IF_NOT_INSTALLED
-      echo "$SUDO_PASSWORD" | sudo -S apt-get install -y "${packages[@]}" "${options[@]}"
-      [ $? -eq 0 ] && successful_pkgs+=("${packages[@]}") || failed_pkgs+=("${packages[@]}")
-    fi
+    retry_if_failed echo "$SUDO_PASSWORD" | sudo -S apt-get install -y "${packages[@]}" "${options[@]}"
+    [ $? -eq 0 ] && successful_pkgs+=("${packages[@]}") || failed_pkgs+=("${packages[@]}")
   fi
 
   if [ ${#failed_apt_packages[@]} -ne 0 ]; then
@@ -215,15 +192,8 @@ install_pkgs_brew() {
   done
 
   if [ ${#packages[@]} -ne 0 ]; then
-    echo "$SUDO_PASSWORD" | brew install "${packages[@]}" "${options[@]}"
-    if [ $? -eq 0 ]; then
-      successful_pkgs+=("${packages[@]}")
-    else
-      log "${ERROR}" "Failed to install packages ${packages[@]}. Retrying after ${WAIT_FOR_SEC_IF_NOT_INSTALLED} second(s)..."
-      sleep $WAIT_FOR_SEC_IF_NOT_INSTALLED
-      echo "$SUDO_PASSWORD" | brew install "${packages[@]}" "${options[@]}"
-      [ $? -eq 0 ] && successful_pkgs+=("${packages[@]}") || failed_pkgs+=("${packages[@]}")
-    fi
+    retry_if_failed | echo "$SUDO_PASSWORD" | brew install "${packages[@]}" "${options[@]}"
+    [ $? -eq 0 ] && successful_pkgs+=("${packages[@]}") || failed_pkgs+=("${packages[@]}")
   fi
 
   if [ ${#failed_brew_packages[@]} -ne 0 ]; then
@@ -262,15 +232,8 @@ install_pkgs() {
   if [[ "${package_installer}" == "snap" ]]; then
     mark_start "Installing Packages ${pkgs_to_install[@]}" -t$PACKAGE
 
-    echo "$SUDO_PASSWORD" | sudo -S snap install "${options[@]}" "${pkgs_to_install[@]}"
-    if [ $? -eq 0 ]; then
-      successful_pkgs+=("${pkgs_to_install[@]}")
-    else
-      log "${WARN}" "Failed to install packages ${pkgs_to_install[@]}. Retrying after ${WAIT_FOR_SEC_IF_NOT_INSTALLED} second(s)..."
-      sleep $WAIT_FOR_SEC_IF_NOT_INSTALLED
-      echo "$SUDO_PASSWORD" | sudo -S snap install "${options[@]}" "${pkgs_to_install[@]}"
-      [ $? -eq 0 ] && successful_pkgs+=("${pkgs_to_install[@]}") || failed_pkgs+=("${pkgs_to_install[@]}")
-    fi
+    retry_if_failed | echo "$SUDO_PASSWORD" | sudo -S snap install "${options[@]}" "${pkgs_to_install[@]}"
+    [ $? -eq 0 ] && successful_pkgs+=("${pkgs_to_install[@]}") || failed_pkgs+=("${pkgs_to_install[@]}")
 
     mark_end "Installing Packages ${pkgs_to_install[@]}" -t$PACKAGE
 
@@ -299,7 +262,7 @@ add_apt_repo() {
     log "${INFO}" "PPA ${1} is already added."
   else
     mark_start "Adding PPA ${1}" -t$PPA
-    echo "$SUDO_PASSWORD" | sudo -S add-apt-repository -y "${1}"
+    retry_if_failed echo "$SUDO_PASSWORD" | sudo -S add-apt-repository -y "${1}"
     mark_end "Adding PPA ${1}" -t$PPA
   fi
 }
@@ -323,7 +286,7 @@ install_dpkg_pkg() {
   mark_start "Installing Package $pkg_name" -t$PACKAGE
 
   wget -qO "/tmp/${pkg_name}" "$1"
-  echo "$SUDO_PASSWORD" | sudo -S apt-get install "/tmp/${pkg_name}" -y
+  retry_if_failed echo "$SUDO_PASSWORD" | sudo -S apt-get install "/tmp/${pkg_name}" -y
   echo "$SUDO_PASSWORD" | sudo -S apt-get -f install -y
   [ $? -eq 0 ] && successful_pkgs+=("$pkg_name") || failed_pkgs+=("$pkg_name")
   rm "/tmp/${pkg_name}"
