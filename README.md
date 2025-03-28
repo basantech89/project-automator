@@ -25,6 +25,8 @@ If your package manager is apt-get and if you chose zsh
 
 You can choose among bash, zsh, or fish. Automator adds command not found script to your shell so if you type a wrong command, it'll mock you in a funny way.
 
+I'd recommend to choose the fish shell as your shell program.
+
 - If you choose fish
   - It install fisher and below fisher plugins.
     - markcial/upto
@@ -44,7 +46,7 @@ You can choose among bash, zsh, or fish. Automator adds command not found script
     - copyfilepath: to copy the path of a file in clipboard
 
 - If you choose zsh, it install oh-my-zsh and the theme powerlevel10k, and adds below plugins
-  - git
+  - [git](https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/git)
   - history
   - history-substring-search
   - colored-man-pages
@@ -61,6 +63,9 @@ You can choose among bash, zsh, or fish. Automator adds command not found script
   - web-search
   - ssh
   - urltools
+  - [docker](https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/docker)
+
+You can find all the plugins, their aliases, and description that Automator install for zsh here <https://github.com/ohmyzsh/ohmyzsh/wiki/plugins>
 
 ## Aliases
 
@@ -73,6 +78,7 @@ Automator add below aliases -
 - pman: sudo pacman -Syu --needed --noconfirm (if you package manager is pacman)
 - pu: paru -Syu --removemake --cleanafter --needed --noconfirm (if you package manager is pacman)
 - z: zoxide for easy directory navigation
+- plugins added for oh-my-zsh or fisher adds their aliases, e.g docker plugin add its aliases
 
 ## Execution
 
@@ -82,6 +88,8 @@ Automator add below aliases -
 - Unzip the zip file
 - Give the app.sh file permission to execute `chmod +x <path-to-the-project>/app.sh`
 - Run `<path-to-the-project>/app.sh`
+
+If the script fails, run it again, it'll pass unless there's a fatal issue.
 
 ## Logs
 
@@ -94,3 +102,13 @@ Don't forget to logout and login back in, or reboot your system once the script 
 ## Tests
 
 Although the code is written to run the scripts for Linux(Ubuntu, and Arch Linux), or Mac and for shells fish, zsh, or bash, but the scripts are tested only with Ubuntu 22 with fish and zsh shells. I'll try to test it on other systems as well.
+
+## Showcase
+
+Below is how your terminal will look like in
+
+Ubuntu with zsh shell
+![automator-ubuntu-zsh](/images/automator-ubuntu-zsh.png)
+
+Ubuntu with warp terminal with fish shell
+![automator-ubuntu-warp-zsh](/images/automator-ubuntu-fish-warp.png)
