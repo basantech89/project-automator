@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-. ./src/exports.sh
+. $PWD/project-automator/src/exports.sh
 
 main() {
   rm -f main.log main_error.log
