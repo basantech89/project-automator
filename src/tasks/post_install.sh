@@ -146,11 +146,25 @@ install_github_cli() {
   fi
 }
 
+# https://direnv.net/
+install_direnv() {
+  install_pkgs direnv
+
+  if [ "$shell" = fish ]; then
+    echo -e "\ndirenv hook fish | source\n" >>$HOME/.config/fish/config.fish
+  elif [ "$shell" = bash ]; then
+    echo -e "\neval \"\$(direnv hook bash)\"\n" >>$HOME/.bashrc
+  elif [ "$shell" = zsh ]; then
+    echo -e "\neval \"\$(direnv hook zsh)\"\n" >>$HOME/.zshrc
+  fi
+}
+
 install_utilities() {
   mark_start "Install Utilities" -t$TITLE
 
   install_colorls
   install_appimage_launcher
+  install_direnv
   install_zoxide
   install_github_cli
 

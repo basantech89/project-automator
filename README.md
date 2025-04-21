@@ -99,6 +99,10 @@ Project automator store its logs in the `<path-to-the-project>/main.log`, and `<
 
 Don't forget to logout and login back in, or reboot your system once the script has been executed.
 
+Optionally, run below command if you choose zsh as the shell. I couldn't do it in the script since oh-my-zsh creates problems with it. A cow will greet you with a fortune in a new session every time. It's done already if you choose any other shell.
+
+```sed -i '1s;^;fortune -s | cowsay -f `ls -1 /usr/share/cowsay/cows/*.cow | sort -R | head -1` | lolcat\n;' ~/.zshrc```
+
 ## Tests
 
 Although the code is written to run the scripts for Linux(Ubuntu, and Arch Linux), or Mac and for shells fish, zsh, or bash, but the scripts are tested only with Ubuntu 22 with fish and zsh shells. I'll try to test it on other systems as well.
@@ -112,3 +116,12 @@ Ubuntu with zsh shell
 
 Ubuntu with warp terminal with fish shell
 ![automator-ubuntu-warp-zsh](/images/automator-ubuntu-fish-warp.png)
+
+## Issues
+
+Feel free to raise the issues, request new features or contribute to the project.
+
+## ToDo
+
+1. Test the project on MacOS
+2. Replace GNU stow with chezmoi
