@@ -117,9 +117,9 @@ install_pkgs_arch() {
     if [[ "${option}" == "-*" ]]; then
       options+=("${option}")
     else
-      if pacman -Ss "${option}" &>/dev/null; then
+      if pacman -Ss "${option}" | grep -v '^[[:space:]]' | grep -w "${option}" &>/dev/null; then
         pacman_packages+=("${option}")
-      elif paru -Ss "${option}" &>/dev/null; then
+      elif paru -Ss "${option}" | grep -v '^[[:space:]]' | grep -w "${option}" &>/dev/null; then
         aur_packages+=("${option}")
       else
         log "${ERROR}" "Package ${option} does not exist."
@@ -129,7 +129,7 @@ install_pkgs_arch() {
   done
 
   if [ ${#pacman_packages[@]} -ne 0 ]; then
-    retry_if_failed echo "$SUDO_PASSWORD" | sudo -S pacman -S "${pacman_packages[@]}" "${options[@]}" --needed --noconfirm
+    retry_if_failed echo "$SUDO_PASSWORD" | sudo -S pacman -Sy "${pacman_packages[@]}" "${options[@]}" --needed --noconfirm
     [ $? -eq 0 ] && successful_pkgs+=("${pacman_packages[@]}") || failed_pkgs+=("${pacman_packages[@]}")
   fi
 

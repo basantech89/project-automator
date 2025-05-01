@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 
-. $PWD/project-automator/src/exports.sh
+. $PWD/src/exports.sh
 
 main() {
-  rm -f main.log main_error.log
   pre_install
   install
   post_install

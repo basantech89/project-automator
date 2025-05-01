@@ -32,12 +32,16 @@ select_tools() {
     2 "Warp Terminal" on
     3 "Starship" on
     4 "Node" on
-    5 "Google Chrome" on
+    5 "Google Chrome" off
     6 "Vscode" on
     7 "Postman" on
     8 "Docker" on
     9 "Dbeaver" on
     10 "AWS CLI" on
+    11 "Brave Browser" on
+    12 "Microsoft Teams" off
+    13 "Notion" on
+    14 "Slack" off
   )
 
   local choices=$("${cmd[@]}" "${options[@]}" 2>&1 >/dev/tty)
@@ -73,6 +77,18 @@ select_tools() {
       ;;
     10)
       aws_cli=true
+      ;;
+    11)
+      brave_browser=true
+      ;;
+    12)
+      ms_teams=true
+      ;;
+    13)
+      notion=true
+      ;;
+    14)
+      slack=true
       ;;
     esac
   done

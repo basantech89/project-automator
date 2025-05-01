@@ -54,7 +54,7 @@ install_shell_zsh() {
     retry_if_failed git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
     sed -i "/ZSH_THEME=\"robbyrussell\"/ s/robbyrussell/powerlevel10k\/powerlevel10k/" ~/.zshrc
 
-    sed -i "/plugins=(git)/ a\\\tgit\n\thistory\n\thistory-substring-search\n\tcolored-man-pages\n\tzsh-autosuggestions\n\tzsh-syntax-highlighting\n\tcopyfile\n\tcopypath\n\tcopybuffer\n\tgitignore\n\tnpm\n\tsudo\n\tsystemadmin\n\tyarn\n\tweb-search\n\tssh\n\turltools\n)" ~/.zshrc
+    sed -i "/plugins=(git)/ a\\\tgit\n\thistory\n\thistory-substring-search\n\tcolored-man-pages\n\tzsh-autosuggestions\n\tzsh-syntax-highlighting\n\tcopyfile\n\tcopypath\n\tcopybuffer\n\tgitignore\n\tsudo\n\tsystemadmin\n\tweb-search\n\tssh\n\turltools\n)" ~/.zshrc
     sed -i "/plugins=(git)/ s/git)//" ~/.zshrc
   fi
 
@@ -102,7 +102,8 @@ install_shell_fish() {
   end"
 
   if ! grep -q "cowsay" ~/.config/fish/conf.d/insulter.fish; then
-    sed -i -e '/\s\s__insulter_print_message/ s/__insulter_print_message/__insulter_print_message | cowsay -f $(ls \/usr\/share\/cowsay\/cows\/ | shuf -n1) | lolcat/g' ~/.config/fish/conf.d/insulter.fish
+    sed -i -e '/\s\s__insulter_print_message/ i\    set -l toon (random choice {alpaca,bong,bud-forgs,bunny,cower,default,dragon,elephant,eyes,fox,hellokitty,koala,llama,meow,moofasa,moose,mutilated,sheep,skeleton,small,stegosaurus,supermilker,surgery,three-eyes,turtle,tux,udder,vader,www})' ~/.config/fish/conf.d/insulter.fish
+    sed -i -e '/\s\s__insulter_print_message/ s/__insulter_print_message/__insulter_print_message | cowthink -f $toon | lolcat/g' ~/.config/fish/conf.d/insulter.fish
   fi
 
   if ! grep -q "set freq 10" ~/.config/fish/conf.d/insulter.fish; then

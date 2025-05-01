@@ -19,9 +19,12 @@ install_neovim() {
       source_shell_config
 
       [ $? -eq 0 ] && successful_pkgs+=('nvim') || failed_pkgs+=('nvim')
-      install_dot neovim
-
       mark_end "Installing Package nvim" -t$PACKAGE
+    fi
+
+    if ! -d ~/.config/nvim; then
+      git clone https://github.com/LazyVim/starter ~/.config/nvim
+      rm -rf ~/.config/nvim/.git
     fi
   fi
 
@@ -31,12 +34,17 @@ install_neovim() {
 install_warp_terminal() {
   if ! is_pkg_installed warp-terminal; then
     if [ "$package_manager" = 'pacman' ]; then
-      echo "$SUDO_PASSWORD" | sudo -S tee -a /etc/pacman.conf >/dev/null <<EOF
+      if ! grep -q "warpdotdev" /etc/pacman.conf; then
+        echo "$SUDO_PASSWORD" | sudo -S tee -a /etc/pacman.conf >/dev/null <<EOF
 [warpdotdev]
 Server = https://releases.warp.dev/linux/pacman/\$repo/\$arch
+
 EOF
+      fi
+
+      echo "$SUDO_PASSWORD" | sudo -S pacman-key -r "linux-maintainers@warp.dev"
+      echo "$SUDO_PASSWORD" | sudo -S pacman-key --lsign-key "linux-maintainers@warp.dev"
       install_pkgs warp-terminal
-      install_dot warp ~/.config/warp-terminal
     elif [ "$package_manager" = 'apt-get' ]; then
       wget -qO- https://releases.warp.dev/linux/keys/warp.asc | gpg --dearmor >warpdotdev.gpg
       echo "$SUDO_PASSWORD" | sudo -S install -D -o root -g root -m 644 warpdotdev.gpg /etc/apt/keyrings/warpdotdev.gpg
@@ -45,148 +53,42 @@ EOF
 
       update_system quiet
       install_pkgs warp-terminal
-      install_dot warp ~/.config/warp-terminal
     elif [ "$package_manager" = 'brew' ]; then
       install_pkgs --cask warp
-      install_dot warp ~/.config/warp-terminal
     fi
-  fi
+
+    if [[ ! -d "~/.config/warp-terminal" ]]; then
+      mkdir -p ~/.config/warp-terminal
+    fi
+
+    cat >~/.config/warp-terminal/user_preferences.json <<EOF
+{
+  "prefs": {
+    "TelemetryBannerDismissed": "true",
+    "WelcomeTipsFeaturesUsed": "[{\"Hint\":\"CreateBlock\"}]",
+    "ReceivedReferralTheme": "\"Inactive\"",
+    "TelemetryEnabled": "true",
+    "CrashReportingEnabled": "true",
+    "NextCommandSuggestionsUpgradeBannerNumTimesShownThisPeriod": "0",
+    "HasAutoOpenedWelcomeFolder": "true",
+    "IsSettingsSyncEnabled": "true",
+    "InputMode": "\"PinnedToTop\"",
+    "SystemTheme": "false",
+    "Theme": "\"CyberWave\"",
+    "LigatureRenderingEnabled": "true",
+    "FontWeight": "\"Normal\"",
+    "LineHeightRatio": "1.2",
+    "HonorPS1": "true",
+    "ShowBlockDividers": "true",
+    "OverrideOpacity": "80",
+    "AutosuggestionKeybindingHint": "true",
+    "IsSettingsSyncEnabled": "true",
+    "Spacing": "\"Normal\"",
+    "FontSize": "20.0",
+    "FontName": "\"CaskaydiaCove Nerd Font\""
+  }
 }
-
-install_nvm() {
-  mark_start "Installing Packages nvm" -t$PACKAGE
-
-  retry_if_failed curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
-
-  if [ $shell = bash ]; then
-    if ! grep -q "export NVM_DIR" ~/.bashrc; then
-      cat >>~/.bashrc <<EOF
-
-export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
-[ -s "\$NVM_DIR/nvm.sh" ] && \. "\$NVM_DIR/nvm.sh" # This loads nvm
-[ -s "\$NVM_DIR/bash_completion" ] && \. "\$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 EOF
-      source_shell_config
-    fi
-  fi
-
-  if [ $shell = zsh ]; then
-    if ! grep -q "export NVM_DIR" ~/.zshrc; then
-      cat >>~/.zshrc <<EOF
-
-export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
-[ -s "\$NVM_DIR/nvm.sh" ] && \. "\$NVM_DIR/nvm.sh" # This loads nvm
-[ -s "\$NVM_DIR/bash_completion" ] && \. "\$NVM_DIR/bash_completion"  # This loads nvm bash_completion
-
-EOF
-      source_shell_config
-    fi
-  fi
-
-  if [ $shell = fish ]; then
-    fish -c "fisher install jorgebucaran/nvm.fish"
-  fi
-
-  [ $? -eq 0 ] && successful_pkgs+=('nvm') || failed_pkgs+=('nvm')
-
-  mark_end "Installing Packages nvm" -t$PACKAGE
-}
-
-install_node_with_nvm() {
-  if is_pkg_installed nvm; then
-    mark_start "Installing Packages node ${node_version}" -t$PACKAGE
-
-    $shell -ic "nvm install ${node_version}"
-
-    if [ $shell = fish ]; then
-      fish -c "set --universal nvm_default_version ${node_version}"
-    else
-      $shell -ic "nvm alias default ${node_version} && nvm use default"
-    fi
-
-    if test $shell = fish; then
-      fish -C "npm i -g pnpm yarn nx; exit;"
-      # else
-      # below somehow causes the script to exit
-      # $shell -ic "npm i -g pnpm yarn nx"
-    fi
-
-    [ $? -eq 0 ] && successful_pkgs+=("node") || failed_pkgs+=('node')
-
-    mark_end "Installing Packages node ${node_version}" -t$PACKAGE
-  else
-    failed_pkgs+=('node')
-  fi
-}
-
-install_node() {
-  if ! is_pkg_installed nvm; then
-    install_nvm
-    install_node_with_nvm
-  elif (($($shell -ic "nvm list v${node_version} | grep -ic v${node_version}") != 1)); then
-    install_node_with_nvm
-  else
-    log "${INFO}" "Package node ${node_version} is already installed, not installing again."
-    already_installed_pkgs+=("node${node_version}")
-  fi
-}
-
-install_maple_mono() {
-  if ! is_font_installed maple; then
-    retry_if_failed wget https://github.com/subframe7536/maple-font/releases/download/v7.0/MapleMono-NF.zip -O maple-nf.zip
-    unzip maple-nf.zip
-    mv *.ttf ~/.local/share/fonts
-    fc-cache -fv
-    rm -f maple-nf.zip
-  fi
-}
-
-set_terminal_font() {
-  if [ $package_manager = 'apt-get' ]; then
-    if is_pkg_installed gsettings; then
-      local profile=$(gsettings get org.gnome.Terminal.ProfilesList default | tr -d "'")
-      gsettings set org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$profile/ use-system-font false
-      gsettings set org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$profile/ font "$1"
-    fi
-  fi
-}
-
-install_fonts() {
-  install_nerd_fonts -s CaskaydiaMono "CascadiaMono" -s Terminess Terminus -s ComicShanns ComicShannsMono
-  install_maple_mono
-  set_terminal_font "ComicShannsMono Nerd Font 14"
-}
-
-install_starship() {
-  if ! is_pkg_installed starship; then
-    mark_start "Install Starship" -t$PACKAGE
-
-    retry_if_failed curl -sS https://starship.rs/install.sh | sh -s -- -y
-    [ $? -eq 0 ] && {
-      install_dot starship
-
-      if test $shell = fish; then
-        sed -i '$ a\\nstarship init fish | source' ~/.config/fish/config.fish
-      elif test $shell = bash; then
-        sed -i '$ a\\neval "$(starship init bash)"' ~/.bashrc
-      elif test $shell = zsh; then
-        sed -i '$ a\\neval "$(starship init zsh)"' ~/.zshrc
-      fi
-    } || failed_pkgs+=('starship')
-
-    mark_end "Install Starship" -t$PACKAGE
-  fi
-}
-
-install_google_chrome() {
-  if ! is_pkg_installed google-chrome-stable; then
-    if [ "$package_manager" = 'pacman' ]; then
-      install_pkgs google-chrome
-    elif [ "$package_manager" = 'apt-get' ]; then
-      install_dpkg_pkg https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-    elif [ "$package_manager" = 'brew' ]; then
-      install_pkgs --cask google-chrome
-    fi
   fi
 }
 
@@ -240,275 +142,10 @@ END
   fi
 }
 
-install_docker() {
-  if ! is_pkg_installed docker; then
-    if [ "$package_manager" = 'pacman' ]; then
-      echo "$SUDO_PASSWORD" | sudo -S tee /etc/modules-load.d/loop.conf <<<"loop" # enable the loop module
-      modprobe loop
-      install_pkgs docker docker-compose
-    elif test $package_manager = apt-get; then
-      retry_if_failed curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-      add_apt_repo "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-      install_pkgs docker-ce
-    elif [ "$package_manager" = 'brew' ]; then
-      install_pkgs --cask docker
-      install_pkgs docker-compose
-    fi
-
-    [ $? -eq 0 ] && {
-      successful_pkgs+=('docker')
-      echo "$SUDO_PASSWORD" | sudo -S systemctl start docker
-      echo "$SUDO_PASSWORD" | sudo -S systemctl enable docker
-      echo "$SUDO_PASSWORD" | sudo -S groupadd docker
-      echo "$SUDO_PASSWORD" | sudo -S usermod -aG docker ${USER}
-
-      if test $shell = bash; then
-        if [ "$package_manager" = 'apt-get' -o "$package_manager" = 'pacman' ]; then
-          if ! grep -q "bash_completion" ~/.bashrc; then
-            cat <<EOT >>~/.bashrc
-if [ -f /etc/bash_completion ]; then
-    . /etc/bash_completion
-fi
-EOT
-          fi
-        elif [ "$package_manager" = 'brew' ]; then
-          if ! grep -q "bash_completion" ~/.bash_profile; then
-            cat <<EOT >>~/.bash_profile
-[[ -r "\$(brew --prefix)/etc/profile.d/bash_completion.sh" ]] && . "$(brew --prefix)/etc/profile.d/bash_completion.sh"
-EOT
-          fi
-        fi
-
-        if [ ! -f ~/.local/share/bash-completion/completions/docker ]; then
-          mkdir -p ~/.local/share/bash-completion/completions
-          docker completion bash >~/.local/share/bash-completion/completions/docker
-        fi
-      elif test $shell = zsh; then
-        if [ ! -f ~/.oh-my-zsh/completions/_docker ]; then
-          mkdir -p ~/.oh-my-zsh/completions
-          docker completion zsh >~/.oh-my-zsh/completions/_docker
-        fi
-
-        if ! grep -q docker ~/.zshrc; then
-          sed -i -z -e 's/plugins=(\n\tgit/plugins=(\n\tgit\n\tdocker/' ~/.zshrc
-        fi
-      elif test $shell = fish; then
-        if [ ! -f ~/.config/fish/completions/docker.fish ]; then
-          mkdir -p ~/.config/fish/completions
-          docker completion fish >~/.config/fish/completions/docker.fish
-        fi
-
-        if [ ! -f ~/.config/fish/conf.d/docker.fish ]; then
-          cat >>~/.config/fish/conf.d/docker.fish <<EOF
-#!/usr/bin/env fish
-#
-# Copyright (c) 2020 Rich Lewis and François VANTOMME
-# License: MIT
-
-# Adapted from https://github.com/akarzim/zsh-docker-aliases
-
-# Docker
-abbr -a dk 'docker'
-abbr -a dka 'docker attach'
-abbr -a dkb 'docker build'
-abbr -a dkd 'docker diff'
-abbr -a dkdf 'docker system df'
-abbr -a dke 'docker exec'
-abbr -a dkei 'docker exec -it'
-abbr -a dkh 'docker history'
-abbr -a dki 'docker images'
-abbr -a dkin 'docker inspect'
-abbr -a dkim 'docker import'
-abbr -a dkk 'docker kill'
-abbr -a dkkh 'docker kill -s HUP'
-abbr -a dkl 'docker logs'
-abbr -a dkL 'docker logs -f'
-abbr -a dkli 'docker login'
-abbr -a dklo 'docker logout'
-abbr -a dkp 'docker pause'
-abbr -a dkP 'docker unpause'
-abbr -a dkpl 'docker pull'
-abbr -a dkph 'docker push'
-abbr -a dkps 'docker ps'
-abbr -a dkpsa 'docker ps -a'
-abbr -a dkr 'docker run'
-abbr -a dkri 'docker run -it --rm'
-abbr -a dkrie 'docker run -it --rm --entrypoint /bin/bash'
-abbr -a dkRM 'docker system prune'
-abbr -a dkrm 'docker rm'
-abbr -a dkrmi 'docker rmi'
-abbr -a dkrn 'docker rename'
-abbr -a dks 'docker start'
-abbr -a dkS 'docker restart'
-abbr -a dkss 'docker stats'
-abbr -a dksv 'docker save'
-abbr -a dkt 'docker tag'
-abbr -a dktop 'docker top'
-abbr -a dkup 'docker update'
-abbr -a dkv 'docker version'
-abbr -a dkw 'docker wait'
-abbr -a dkx 'docker stop'
-abbr -a dkstop 'docker stop (docker ps -aq)'
-
-# Docker Compose (c)
-abbr -a dkc 'docker compose'
-abbr -a dkcb 'docker compose build'
-abbr -a dkcB 'docker compose build --no-cache'
-abbr -a dkcd 'docker compose down'
-abbr -a dkce 'docker compose exec'
-abbr -a dkck 'docker compose kill'
-abbr -a dkcl 'docker compose logs'
-abbr -a dkcL 'docker compose logs -f'
-abbr -a dkcls 'docker compose ps'
-abbr -a dkcp 'docker compose pause'
-abbr -a dkcP 'docker compose unpause'
-abbr -a dkcpl 'docker compose pull'
-abbr -a dkcph 'docker compose push'
-abbr -a dkcps 'docker compose ps'
-abbr -a dkcr 'docker compose run'
-abbr -a dkcR 'docker compose run --rm'
-abbr -a dkcrm 'docker compose rm'
-abbr -a dkcs 'docker compose start'
-abbr -a dkcsc 'docker compose scale'
-abbr -a dkcS 'docker compose restart'
-abbr -a dkcu 'docker compose up'
-abbr -a dkcU 'docker compose up -d'
-abbr -a dkcv 'docker compose version'
-abbr -a dkcx 'docker compose stop'
-#
-## Container (C)
-abbr -a dkC 'docker container'
-abbr -a dkCa 'docker container attach'
-abbr -a dkCcp 'docker container cp'
-abbr -a dkCd 'docker container diff'
-abbr -a dkCe 'docker container exec'
-abbr -a dkCei 'docker container exec -it'
-abbr -a dkCin 'docker container inspect'
-abbr -a dkCk 'docker container kill'
-abbr -a dkCl 'docker container logs'
-abbr -a dkCL 'docker container logs -f'
-abbr -a dkCls 'docker container ls'
-abbr -a dkCp 'docker container pause'
-abbr -a dkCpr 'docker container prune'
-abbr -a dkCrn 'docker container rename'
-abbr -a dkCS 'docker container restart'
-abbr -a dkCrm 'docker container rm'
-abbr -a dkCr 'docker container run'
-abbr -a dkCri 'docker container run -it --rm'
-abbr -a dkCrie 'docker container run -it --rm --entrypoint /bin/bash'
-abbr -a dkCs 'docker container start'
-abbr -a dkCss 'docker container stats'
-abbr -a dkCx 'docker container stop'
-abbr -a dkCtop 'docker container top'
-abbr -a dkCP 'docker container unpause'
-abbr -a dkCup 'docker container update'
-abbr -a dkCw 'docker container wait'
-
-## Image (I)
-abbr -a dkI 'docker image'
-abbr -a dkIb 'docker image build'
-abbr -a dkIh 'docker image history'
-abbr -a dkIim 'docker image import'
-abbr -a dkIin 'docker image inspect'
-abbr -a dkIls 'docker image ls'
-abbr -a dkIpr 'docker image prune'
-abbr -a dkIpl 'docker image pull'
-abbr -a dkIph 'docker image push'
-abbr -a dkIrm 'docker image rm'
-abbr -a dkIsv 'docker image save'
-abbr -a dkIt 'docker image tag'
-
-## Volume (V)
-abbr -a dkV 'docker volume'
-abbr -a dkVin 'docker volume inspect'
-abbr -a dkVls 'docker volume ls'
-abbr -a dkVpr 'docker volume prune'
-abbr -a dkVrm 'docker volume rm'
-
-## Network (N)
-abbr -a dkN 'docker network'
-abbr -a dkNs 'docker network connect'
-abbr -a dkNx 'docker network disconnect'
-abbr -a dkNin 'docker network inspect'
-abbr -a dkNls 'docker network ls'
-abbr -a dkNpr 'docker network prune'
-abbr -a dkNrm 'docker network rm'
-
-## System (Y)
-abbr -a dkY 'docker system'
-abbr -a dkYdf 'docker system df'
-abbr -a dkYpr 'docker system prune'
-
-## Stack (K)
-abbr -a dkK 'docker stack'
-abbr -a dkKls 'docker stack ls'
-abbr -a dkKps 'docker stack ps'
-abbr -a dkKrm 'docker stack rm'
-
-## Swarm (W)
-abbr -a dkW 'docker swarm'
-
-# Docker Machine (m)
-abbr -a dkm 'docker-machine'
-abbr -a dkma 'docker-machine active'
-abbr -a dkmcp 'docker-machine scp'
-abbr -a dkmin 'docker-machine inspect'
-abbr -a dkmip 'docker-machine ip'
-abbr -a dkmk 'docker-machine kill'
-abbr -a dkmls 'docker-machine ls'
-abbr -a dkmpr 'docker-machine provision'
-abbr -a dkmps 'docker-machine ps'
-abbr -a dkmrg 'docker-machine regenerate-certs'
-abbr -a dkmrm 'docker-machine rm'
-abbr -a dkms 'docker-machine start'
-abbr -a dkmsh 'docker-machine ssh'
-abbr -a dkmst 'docker-machine status'
-abbr -a dkmS 'docker-machine restart'
-abbr -a dkmu 'docker-machine url'
-abbr -a dkmup 'docker-machine upgrade'
-abbr -a dkmv 'docker-machine version'
-abbr -a dkmx 'docker-machine stop'
-
-## CleanUp (rm)
-# Clean up exited containers (docker < 1.13)
-abbr -a dkrmC 'docker rm (docker ps -qaf status=exited)'
-
-# Clean up dangling images (docker < 1.13)
-abbr -a dkrmI 'docker rmi (docker images -qf dangling=true)'
-
-# Pull all tagged images
-abbr -a dkplI 'docker images --format "{{ .Repository }}" | grep -v "^<none>$" | xargs -L1 docker pull'
-
-# Clean up dangling volumes (docker < 1.13)
-abbr -a dkrmV 'docker volume rm (docker volume ls -qf dangling=true)'
-
-# Custom
-# Stop and Remove all containers
-abbr -a drmf 'docker stop (docker ps -a -q); docker rm (docker ps -a -q)'
-
-# Remove exited containers:
-abbr -a drxc 'docker ps --filter status=dead --filter status=exited -aq | xargs docker rm -v'
-
-# Remove unused images:
-abbr -a drui 'docker images --no-trunc | grep \'<none>\' | awk \'{ print $3 }\' | xargs docker rmi'
-
-function dbash -d "bash into running container"
-  docker exec -it (docker ps -aqf "name=$argv[1]") bash
-end
-EOF
-        fi
-      fi
-    } || failed_pkgs+=('docker')
-  fi
-}
-
 install_dbeaver() {
   if ! is_pkg_installed dbeaver; then
     if [ "$package_manager" = 'pacman' ]; then
-      retry_if_failed wget -O- https://dbeaver.io/files/dbeaver-ce-latest-linux.gtk.x86_64.tar.gz | gunzip | tar xvf - -C /opt/dbeaver
-      echo "$SUDO_PASSWORD" | sudo -S ln -s /opt/dbeaver/dbeaver /usr/bin/dbeaver
-      [ $? -eq 0 ] && successful_pkgs+=('dbeaver') || failed_pkgs+=('dbeaver')
-
+      install_pkgs dbeaver dbeaver-plugin-office
     elif [ "$package_manager" = 'apt-get' ]; then
       install_dpkg_pkg https://dbeaver.io/files/dbeaver-ce_latest_amd64.deb
     elif [ "$package_manager" = 'brew' ]; then
@@ -517,95 +154,30 @@ install_dbeaver() {
   fi
 }
 
-install_aws_cli() {
-  if ! is_pkg_installed aws; then
-    if [ "$package_manager" = 'pacman' ]; then
-      install_pkgs aws-cli-v2
-    elif [ "$package_manager" = 'apt-get' ]; then
-      install_pkgs --snap --classic aws-cli
-    elif [ "$package_manager" = 'brew' ]; then
-      install_pkgs awscli
-    fi
+install_notion() {
+  if [ "$package_manager" = 'pacman' ]; then
+    install_pkgs notion-app-electron
+  elif [ "$package_manager" = 'apt-get' ]; then
+    install_pkgs --snap notion-snap-reborn
+  elif [ "$package_manager" = 'brew' ]; then
+    install_pkgs --cask notion
   fi
+}
 
-  if [ $? -eq 0 ]; then
-    if test $shell = 'fish'; then
-      fish -C "complete --command aws --no-files --arguments '(begin; set --local --export COMP_SHELL fish; set --local --export COMP_LINE (commandline); aws_completer | sed \'s/ $//\'; end)';exit"
+install_ms_teams() {
+  if [ "$package_manager" = 'pacman' ]; then
+    install_pkgs teams
+  elif [ "$package_manager" = 'apt-get' ]; then
+    install_pkgs --snap teams-for-linux
+  elif [ "$package_manager" = 'brew' ]; then
+    install_pkgs --cask microsoft-teams
+  fi
+}
 
-      if [ ! -f ~/.config/fish/functions/aws.fish ]; then
-        cat >~/.config/fish/functions/aws.fish <<EOF
-function aws_checks
-    if test -z \$AWS_PROFILE
-        echo "AWS_PROFILE is not set."
-        return 1
-    end
-
-    if test "\$AWS_PROFILE" != bp-dev -a "\$AWS_PROFILE" != bp-qa
-        echo "AWS_PROFILE is neither bp-dev or bp-qa."
-        return 1
-    end
-
-    if test (count \$argv) -ne 1
-        echo "Expected 1 arguments, got \$(count \$argv)"
-        return 1
-    end
-end
-
-function aws_env_check
-    set -g env \$argv[1]
-
-    if test "\$env" != dev -a "\$env" != qa
-        echo "Not allowed to get password for \$env environment."
-        return 1
-    end
-
-    if test "\$env" = dev
-        set -g PROFILE bp-dev
-    else if test "\$env" = qa
-        set -g PROFILE bp-qa
-    end
-end
-
-function dbpass
-    aws_checks "\$argv"
-    aws_env_check "\$argv"
-
-    if test \$status -ne 0
-        return 1
-    end
-
-    set -f secret_name \$(aws secretsmanager list-secrets --profile $PROFILE --output json | jq --arg env "\$env" '.SecretList[].Name | select(contains(\$env)) | select(contains("portal"))')
-    set -f secret_string \$(aws secretsmanager get-secret-value --secret-id \$(string sub -s 2 -e -1 \$secret_name) --profile \$PROFILE | jq -r '.SecretString' | jq '.')
-    echo \$secret_string | jq '.'
-    echo \$secret_string | jq '.password' | string sub -s 2 -e -1 | xclip -sel c
-end
-
-function ec2ip
-    aws_checks "\$argv"
-
-    if test \$status -ne 0
-        return 1
-    end
-
-    set -f ip \$(aws ec2 describe-instances | jq '.Reservations[].Instances[] | select(.Tags[].Value | contains("rds-berrybox-portal-ec2")) | .NetworkInterfaces[].Association.PublicIp' | string sub -s 2 -e -1)
-    echo \$ip
-    echo \$ip | xclip -sel c
-end
-
-function ssm
-    aws_checks "\$argv"
-
-    if test \$status -ne 0
-        return 1
-    end
-
-    set -f name \$(aws ssm describe-parameters --parameter-filters "Key=Name,Option=Contains,Values=\$argv[1]" --query 'Parameters | [0].Name' | string sub -s 2 -e -1)
-    set -f value \$(aws ssm get-parameter --name "\$name" --with-decryption --query 'Parameter.Value' | string sub -s 2 -e -1)
-    echo \$value
-    echo \$value | xclip -sel c
-end
-EOF
-      fi
-    fi
+install_slack() {
+  if [ "$package_manager" = 'brew' ]; then
+    install_pkgs --cask slack
+  else
+    install_pkgs --snap slack
   fi
 }

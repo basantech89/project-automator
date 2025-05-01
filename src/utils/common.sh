@@ -231,7 +231,7 @@ add_to_path() {
         fi
       fi
     elif [[ "$shell" = "fish" ]]; then
-      fish -C "fish_add_path $1; exit"
+      fish -C "fish_add_path -U -a $1; exit"
     fi
   fi
 }
@@ -279,4 +279,12 @@ retry_if_failed() {
     sleep $delay
     delay=$((delay * 2))
   done
+}
+
+function detect_desktop_env() {
+  DESKTOP_ENV=$(echo $XDG_CURRENT_DESKTOP | tr '[:upper:]' '[:lower:]')
+
+  if [ -z "$DESKTOP_ENV" ]; then
+    DESKTOP_ENV=$(echo $DESKTOP_SESSION | tr '[:upper:]' '[:lower:]')
+  fi
 }

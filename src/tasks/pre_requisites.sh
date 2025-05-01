@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 install_prerequisites() {
-  install_pkgs git sudo curl wget gpg jq xclip vim cowsay lolcat
+  install_pkgs git sudo curl wget gnupg jq xclip vim cowsay lolcat unzip
 
   if [ "$package_manager" = 'pacman' ]; then
     install_pkgs bash-completion
@@ -10,10 +10,12 @@ install_prerequisites() {
       mark_start "Install Prerequisites"
 
       cd $HOME
-      echo "$SUDO_PASSWORD" | sudo -S pacman -S --needed --noconfirm base-devel
+      install_pkgs base-devel cargo
       git clone https://aur.archlinux.org/paru.git
       cd paru
-      makepkg -si
+      makepkg -rs --noconfirm
+      echo "$SUDO_PASSWORD" | sudo -S pacman -U --needed --noconfirm ./paru*.zst
+      rm -rf paru
 
       mark_end "Install Prerequisites"
       cd $HOME
@@ -34,5 +36,14 @@ install_prerequisites() {
 
       mark_end "Install Prerequisites" -t$SUBTITLE
     }
+  fi
+
+  if [ "$package_manager" != 'pacman' ]; then
+    if ! is_pkg_installed snap; then
+      install_pkgs snapd
+      echo "$SUDO_PASSWORD" | sudo -S systemctl enable --now snapd.socket
+      echo "$SUDO_PASSWORD" | sudo -S systemctl enable --now snapd.apparmor.socket # snap confinement and application sandboxing
+      echo "$SUDO_PASSWORD" | sudo -S ln -s /var/lib/snapd/snap /snap              # classic support
+    fi
   fi
 }

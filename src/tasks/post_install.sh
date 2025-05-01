@@ -12,9 +12,13 @@ show_summary() {
 }
 
 add_abbreviations() {
-  if [ "$package_manager" = pacman ]; then
+  if [ "$package_manager" = 'pacman' ]; then
     abbrs[pman]='sudo pacman -Syu --needed --noconfirm'
     abbrs[pu]='paru -Syu --removemake --cleanafter --needed --noconfirm'
+    abbs[pm]='sudo pacman-mirrors --fasttrack 20 && sudo pacman -Syyu'
+    abbs[pma]='sudo pacman-mirrors --country all'
+  elif [ "$package_manager" = 'apt-get' ]; then
+    abbr[ag]='sudo apt install -y'
   fi
 
   if [ "$shell" = fish ]; then
@@ -68,8 +72,8 @@ install_colorls() {
   if ! is_pkg_installed colorls; then
     mark_start "Install Colorls" -t$PACKAGE
 
-    install_pkgs ruby ruby-dev
-    echo "$SUDO_PASSWORD" | sudo -S gem install colorls
+    install_pkgs ruby
+    gem install colorls
 
     if [ $? -eq 0 ]; then
       if test $shell = bash; then
@@ -79,6 +83,7 @@ install_colorls() {
       fi
     fi
 
+    add_to_path $HOME/.local/share/gem/ruby/3.3.0/bin
     mark_end "Install Colorls" -t$PACKAGE
   fi
 
@@ -103,14 +108,10 @@ install_zoxide() {
   if ! is_pkg_installed zoxide; then
     mark_start "Install Zoxide" -t$PACKAGE
 
-    mkdir -p ~/.local/bin
-    add_to_path "\$HOME\/.local\/bin"
-    source_shell_config
-
-    if [ "$package_manager" = 'brew' ]; then
-      install_pkgs zoxide
-    elif [ "$package_manager" = 'apt-get' ]; then
+    if [ "$package_manager" = 'apt-get' ]; then
       retry_if_failed curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh
+    else
+      install_pkgs zoxide
     fi
 
     if [ $? -eq 0 ]; then
@@ -177,13 +178,13 @@ install_utilities() {
   fi
 
   if [ $shell = bash ]; then
-    sed -i '1s;^;fortune -s | cowsay -f `ls -1 /usr/share/cowsay/cows/*.cow | sort -R | head -1` | lolcat\n;' ~/.bashrc
+    sed -i '1s;^;fortune -s | cowthink -f `ls -1 /usr/share/cowsay/cows/*.cow | sort -R | head -1` | lolcat\n;' ~/.bashrc
   # elif [ $shell = zsh ]; then
-  #   sed -i '1s;^;fortune -s | cowsay -f `ls -1 /usr/share/cowsay/cows/*.cow | sort -R | head -1` | lolcat\n;' ~/.zshrc
+  #   sed -i '1s;^;fortune -s | cowthink -f `ls -1 /usr/share/cowsay/cows/*.cow | sort -R | head -1` | lolcat\n;' ~/.zshrc
   elif [ $shell = fish ]; then
     cat >~/.config/fish/functions/fish_greeting.fish <<EOF
 function fish_greeting
-    fortune -s | cowsay -f $(ls /usr/share/cowsay/cows/ | shuf -n1) | lolcat
+    fortune -s | cowthink -f $(ls /usr/share/cowsay/cows/ | shuf -n1) | lolcat
 end
 EOF
   fi

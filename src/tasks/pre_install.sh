@@ -4,7 +4,7 @@ pre_install() {
   cd $HOME
   mark_start "Pre-Install" -t$TITLE
 
-  if (($(groups | grep -c -w "sudo") != 1)); then
+  if (($(groups | grep -c -w -e "sudo" -e "wheel") != 1)); then
     log "${ERROR}" "User $USER is not in the sudo group, exiting."
     exit $NOT_SUDO_USER
   fi
