@@ -211,13 +211,13 @@ validate_version() {
 }
 
 add_to_path() {
-  if ! $shell -c "echo $PATH | grep -q $1"; then
+  if ! run_shell "echo $PATH | grep -q $1"; then
     if [[ "$shell" = "bash" ]]; then
       if ! grep -q "export PATH=\"\$PATH:.*$1.*\"$" ~/.bashrc; then
         if ! grep -q "export PATH=\"" ~/.bashrc; then
           echo -e "\nexport PATH=\"\$PATH:$1\"" >>$HOME/.bashrc
         else
-          sed -i -e "/export PATH=\"\$PATH:\/.*\"/ s/.$//" $HOME/.bashrc
+          sed -i -e "/export PATH=\"\$PATH:.*\"/ s/.$//" $HOME/.zshrc
           sed -i -e "/export PATH=\"\$PATH:.*/ s/$/:${1}\"/" $HOME/.bashrc
         fi
       fi
@@ -226,7 +226,7 @@ add_to_path() {
         if ! grep -q "export PATH=\"" ~/.zshrc; then
           echo -e "\nexport PATH=\"\$PATH:$1\"" >>$HOME/.zshrc
         else
-          sed -i -e "/export PATH=\"\$PATH:\/.*\"/ s/.$//" $HOME/.zshrc
+          sed -i -e "/export PATH=\"\$PATH:.*\"/ s/.$//" $HOME/.zshrc
           sed -i -e "/export PATH=\"\$PATH:.*/ s/$/:${1}\"/" $HOME/.zshrc
         fi
       fi
@@ -279,6 +279,28 @@ retry_if_failed() {
     sleep $delay
     delay=$((delay * 2))
   done
+}
+
+run_bash() {
+  bash -c "source ~/.bashrc; $@"
+}
+
+run_zsh() {
+  zsh -c "source ~/.zshrc; $@"
+}
+
+run_fish() {
+  fish -c "source ~/.config/fish/config.fish; $@"
+}
+
+run_shell() {
+  if [[ "$shell" = "bash" ]]; then
+    run_bash "$@"
+  elif [[ "$shell" = "zsh" ]]; then
+    run_zsh "$@"
+  elif [[ "$shell" = "fish" ]]; then
+    run_fish "$@"
+  fi
 }
 
 function detect_desktop_env() {

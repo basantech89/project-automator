@@ -73,7 +73,13 @@ install_colorls() {
     mark_start "Install Colorls" -t$PACKAGE
 
     install_pkgs ruby
-    gem install colorls
+
+    if [ "$package_manager" = 'apt-get' ]; then
+      install_pkgs ruby-dev
+      echo "$SUDO_PASSWORD" | sudo -S gem install colorls
+    else
+      gem install colorls
+    fi
 
     if [ $? -eq 0 ]; then
       if test $shell = bash; then
@@ -83,7 +89,9 @@ install_colorls() {
       fi
     fi
 
-    add_to_path $HOME/.local/share/gem/ruby/3.3.0/bin
+    if [ "$package_manager" = 'pacman' ]; then
+      add_to_path $HOME/.local/share/gem/ruby/3.3.0/bin
+    fi
     mark_end "Install Colorls" -t$PACKAGE
   fi
 
@@ -97,9 +105,10 @@ install_appimage_launcher() {
   if ! is_pkg_installed appimagelauncherd; then
     if [ "$package_manager" = 'pacman' ]; then
       install_pkgs appimagelauncher
-    elif [ "$package_manager" = 'apt-get' ]; then
-      add_apt_repo ppa:appimagelauncher-team/stable
-      install_pkgs appimagelauncher
+      # elif [ "$package_manager" = 'apt-get' ]; then
+      # deprecated
+      # add_apt_repo ppa:appimagelauncher-team/stable
+      # install_pkgs appimagelauncher
     fi
   fi
 }
@@ -109,6 +118,8 @@ install_zoxide() {
     mark_start "Install Zoxide" -t$PACKAGE
 
     if [ "$package_manager" = 'apt-get' ]; then
+      mkdir -p ~/.local/bin
+      add_to_path "\$HOME\/.local\/bin"
       retry_if_failed curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh
     else
       install_pkgs zoxide
@@ -149,14 +160,22 @@ install_github_cli() {
 
 # https://direnv.net/
 install_direnv() {
-  install_pkgs direnv
+  if ! is_pkg_installed direnv; then
+    install_pkgs direnv
 
-  if [ "$shell" = fish ]; then
-    echo -e "\ndirenv hook fish | source\n" >>$HOME/.config/fish/config.fish
-  elif [ "$shell" = bash ]; then
-    echo -e "\neval \"\$(direnv hook bash)\"\n" >>$HOME/.bashrc
-  elif [ "$shell" = zsh ]; then
-    echo -e "\neval \"\$(direnv hook zsh)\"\n" >>$HOME/.zshrc
+    if [ "$shell" = fish ]; then
+      if ! grep -q "direnv hook fish" $HOME/.config/fish/config.fish; then
+        echo -e "\ndirenv hook fish | source\n" >>$HOME/.config/fish/config.fish
+      fi
+    elif [ "$shell" = bash ]; then
+      if ! grep -q "direnv hook bash" $HOME/.bashrc; then
+        echo -e "\neval \"\$(direnv hook bash)\"\n" >>$HOME/.bashrc
+      fi
+    elif [ "$shell" = zsh ]; then
+      if ! grep -q "direnv hook zsh" $HOME/.zshrc; then
+        echo -e "\neval \"\$(direnv hook zsh)\"\n" >>$HOME/.zshrc
+      fi
+    fi
   fi
 }
 
@@ -167,7 +186,7 @@ install_utilities() {
   install_appimage_launcher
   install_direnv
   install_zoxide
-  install_github_cli
+  # install_github_cli
 
   install_pkgs ncdu peco safe-rm plocate highlight ripgrep
 

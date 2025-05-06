@@ -16,7 +16,7 @@ install_starship() {
       fi
     } || failed_pkgs+=('starship')
 
-    if ! -f ~/.config/starship.toml; then
+    if [[ ! -f ~/.config/starship.toml ]]; then
       cat >~/.config/starship.toml <<EOF
 format = """
 [](color_os)\\

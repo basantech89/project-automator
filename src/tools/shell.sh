@@ -102,7 +102,8 @@ install_shell_fish() {
   end"
 
   if ! grep -q "cowsay" ~/.config/fish/conf.d/insulter.fish; then
-    sed -i -e '/\s\s__insulter_print_message/ i\    set -l toon (random choice {alpaca,bong,bud-forgs,bunny,cower,default,dragon,elephant,eyes,fox,hellokitty,koala,llama,meow,moofasa,moose,mutilated,sheep,skeleton,small,stegosaurus,supermilker,surgery,three-eyes,turtle,tux,udder,vader,www})' ~/.config/fish/conf.d/insulter.fish
+    echo "$SUDO_PASSWORD" | sudo -S cp *.cow $AUTOMATOR_DIR/src/assets/cows /usr/share/cowsay/cows/
+    sed -i -e '/\s\s__insulter_print_message/ i\    set -l toon (random choice {alpaca,bong,bud-frogs,bunny,cower,default,dragon,elephant,eyes,fox,hellokitty,koala,llama,meow,moofasa,moose,mutilated,sheep,skeleton,small,stegosaurus,supermilker,surgery,three-eyes,turtle,tux,udder,vader,www})' ~/.config/fish/conf.d/insulter.fish
     sed -i -e '/\s\s__insulter_print_message/ s/__insulter_print_message/__insulter_print_message | cowthink -f $toon | lolcat/g' ~/.config/fish/conf.d/insulter.fish
   fi
 

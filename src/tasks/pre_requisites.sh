@@ -38,12 +38,14 @@ install_prerequisites() {
     }
   fi
 
-  if [ "$package_manager" != 'pacman' ]; then
+  if [ "$package_manager" = 'pacman' ]; then
     if ! is_pkg_installed snap; then
       install_pkgs snapd
-      echo "$SUDO_PASSWORD" | sudo -S systemctl enable --now snapd.socket
-      echo "$SUDO_PASSWORD" | sudo -S systemctl enable --now snapd.apparmor.socket # snap confinement and application sandboxing
-      echo "$SUDO_PASSWORD" | sudo -S ln -s /var/lib/snapd/snap /snap              # classic support
+
+      echo "$SUDO_PASSWORD" | sudo -S systemctl enable --now snapd
+      echo "$SUDO_PASSWORD" | sudo -S systemctl start snapd
+      echo "$SUDO_PASSWORD" | sudo -S systemctl enable --now snapd.apparmor # snap confinement and application sandboxing
+      echo "$SUDO_PASSWORD" | sudo -S ln -s /var/lib/snapd/snap /snap       # classic support
     fi
   fi
 }

@@ -22,7 +22,7 @@ install_neovim() {
       mark_end "Installing Package nvim" -t$PACKAGE
     fi
 
-    if ! -d ~/.config/nvim; then
+    if [[ ! -d ~/.config/nvim ]]; then
       git clone https://github.com/LazyVim/starter ~/.config/nvim
       rm -rf ~/.config/nvim/.git
     fi
