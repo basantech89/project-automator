@@ -166,7 +166,7 @@ install_notion() {
 
 install_ms_teams() {
   if [ "$package_manager" = 'pacman' ]; then
-    install_pkgs teams
+    install_pkgs teams-for-linux-bin
   elif [ "$package_manager" = 'apt-get' ]; then
     install_pkgs --snap teams-for-linux
   elif [ "$package_manager" = 'brew' ]; then

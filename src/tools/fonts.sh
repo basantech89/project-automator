@@ -21,7 +21,7 @@ set_terminal_font() {
 }
 
 install_fonts() {
-  install_nerd_fonts -s CaskaydiaMono "CascadiaMono" -s Terminess Terminus -s ComicShanns ComicShannsMono
+  install_nerd_fonts -s CaskaydiaMono "CascadiaMono" -s CaskaydiaCove CascadiaCode -s Terminess Terminus -s ComicShanns ComicShannsMono
   install_maple_mono
   set_terminal_font "ComicShannsMono Nerd Font 14"
 }

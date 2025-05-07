@@ -4,49 +4,16 @@ Automator automates environment setup. Automator assumes you don't have even git
 
 You can run this tool as many times as you want, and choose different options as per your choice.
 
-## Tools
-
-it install below tools for you
-
-- git, sudo, curl, wget, gpg, jq, xclip, cowsay, lolcat
-- neovim, warp terminal, starship, nvm, node, google chrome, dbeaver, postman, docker, aws cli
-- ncdu, peco, safe-rm, plocate, highlight, ripgrep, colorls, app image launcher, zoxide, fortune
-- Fonts: CaskaydiaMono, Terminess, ComicShanns, Maple Mono
-
-If your package manager is pacman
-
-- It install paru as well for you.
-
-If your package manager is apt-get and if you chose zsh
-
-- It set your terminal font to ComicShans nerd font since nerd font support ligatures which are needed for the powerlevel10k theme that Automator installs.
-
 ## SHELL
 
-You can choose among bash, zsh, or fish. Automator adds command not found script to your shell so if you type a wrong command, it'll mock you in a funny way.
+You can choose among bash, zsh, or fish. I'd recommend to choose the fish shell as your shell program.
 
-I'd recommend to choose the fish shell as your shell program.
-
-- If you choose fish
-  - It install fisher and below fisher plugins.
-    - markcial/upto
-    - meaningful-ooo/sponge
-    - jorgebucaran/autopair.fish
-    - nickeb96/puffer-fish
-    - acomagu/fish-async-prompt
-    - gazorby/fish-abbreviation-tips
-    - jhillyerd/plugin-git
-    - berk-karaal/loadenv.fish
-    - PatrickF1/fzf.fish
-    - Alaz-Oz/fish-insulter
-
-  - It also adds below functions
-    - copyfile: to copy the file content in clipboard
-    - copypath: to copy the pwd in clipboard
-    - copyfilepath: to copy the path of a file in clipboard
-
-- If you choose zsh, it install oh-my-zsh and the theme powerlevel10k, and adds below plugins
-  - [git](https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/git)
+- if you choose to use zsh shell
+- zsh: The shell itself
+- [oh-my-zsh](https://ohmyz.sh/)
+- Terminal theme: [Powerlevel10k](https://github.com/romkatv/powerlevel10k)
+- [Plugins](https://github.com/ohmyzsh/ohmyzsh/wiki/plugins):
+  - git
   - history
   - history-substring-search
   - colored-man-pages
@@ -56,29 +23,138 @@ I'd recommend to choose the fish shell as your shell program.
   - copypath
   - copybuffer
   - gitignore
-  - npm
   - sudo
   - systemadmin
-  - yarn
   - web-search
   - ssh
   - urltools
-  - [docker](https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/docker)
+  - if you choose to install node
+    - npm
+    - yarn
+- If you choose to use fish shell
+  - fish: The shell itself
+  - fzf: The Fuzzy Finder
+  - bat
+  - fd
+  - [fisher](https://github.com/jorgebucaran/fisher): fish shell plugins manager
+    - Plugins
+      - [markcial/upto](https://github.com/Markcial/upto)
+      - [meaningful-ooo/sponge](https://github.com/meaningful-ooo/sponge)
+      - [jorgebucaran/autopair.fish](https://github.com/jorgebucaran/autopair.fish)
+      - [nickeb96/puffer-fish](https://github.com/nickeb96/puffer-fish)
+      - [acomagu/fish-async-prompt](https://github.com/Gazorby/fish-abbreviation-tips)
+      - [gazorby/fish-abbreviation-tips](https://github.com/Gazorby/fish-abbreviation-tips)
+      - [jhillyerd/plugin-git](https://github.com/jhillyerd/plugin-git)
+      - [berk-karaal/loadenv.fish](https://github.com/berk-karaal/loadenv.fish)
+      - [PatrickF1/fzf.fish](https://github.com/PatrickF1/fzf.fish)
+      - [Alaz-Oz/fish-insulter](https://github.com/Alaz-Oz/fish-insulter)
+  - Custom Functions:
+    - copyfile: copy the content of a file
+    - copypath: copy the current path
+    - copyfilepath: copy the path of a file
 
 You can find all the plugins, their aliases, and description that Automator install for zsh here <https://github.com/ohmyzsh/ohmyzsh/wiki/plugins>
+
+## Tools
+
+it install below tools for you
+
+- Installed by Automator automatically
+  - [dialog](https://linuxcommand.org/lc3_adv_dialog.php): take user input with a dialog
+  - git
+  - sudo
+  - curl
+  - wget
+  - gpg
+  - [jq](https://jqlang.org/): to process JSON data
+  - [xclip](https://linuxconfig.org/how-to-use-xclip-on-linux): to interact with system clipboard
+  - vim
+  - [cowsay](https://itsfoss.com/cowsay/): show you a cow in the terminal
+    - cows: Some cowsay cow files that I handpicked
+  - [lolcat](https://github.com/busyloop/lolcat): display text in your terminal with rainbow colors
+  - [fortune](https://www.howtogeek.com/linux-terminal-fortune-command/): tell you fortune
+  - unzip
+  - zip
+  - paru: Automator install this aur-helper if your package manager is pacman to install packages from the AUR
+  - software-properties-common: if your package manager is apt-get
+  - apt-transport-https: if your package manager is apt-get
+  - ca-certificates: if your package manager is apt-get
+  - bash-completion: if your package manager is apt-get
+  - brew: if your package manager is brew
+  - bash-completion@2: if your package manager is brew
+  - snap: to install snap packages
+  - [ncdu](https://www.tecmint.com/ncdu-a-ncurses-based-disk-usage-analyzer-and-tracker/): powerful disk analyzer
+  - [peco](https://github.com/peco/peco): interactive filtering
+  - [safe-rm](https://github.com/kaelzhang/shell-safe-rm): move files to trash instead of directly deleting
+  - [plocate](https://plocate.sesse.net/): find any file in linux
+  - [highlight](https://linux.die.net/man/1/source-highlight): colored cat
+  - [ripgrep](https://github.com/BurntSushi/ripgrep)
+  - [zoxide](https://github.com/ajeetdsouza/zoxide): smarter cd command
+  - [colorls](https://github.com/athityakumar/colorls): ls alternative that shows file icons as well
+    - ruby
+    - If your package manager is apt-get
+      - ruby-dev
+  - If your package manager is pacman
+    - [app image launcher](https://github.com/TheAssassin/AppImageLauncher)
+  - [direnv](https://direnv.net/): load environment variables from an .envrc file or an.env file
+  - command-not-found script: insulter script that runs when a command is not found
+
+- You choose
+  - neovim
+    - python3-dev: if your package manager is apt-get
+    - python3-pip: if your package manager is apt-get
+  - [warp terminal](https://www.warp.dev/)
+    - Automator sets below configuration automatically
+      - Theme: Cyberwave
+      - Font: CaskaydiaCove Nerd Font
+      - InputMode: PinnedToTop (so you don't have to turn your neck down all the time, good ergonomically)
+  - [starship](https://starship.rs/): if you choose to use fish shell
+  - node: install node with [FNM](https://github.com/Schniz/fnm)
+  - google chrome
+  - dbeaver
+    - dbeaver-plugin-office: if your package manager is pacman
+  - postman
+  - docker
+  - aws cli
+  - notion
+  - microsoft teams
+  - slack
+  - brave browser
+  - vscode
+
+## Fonts
+
+- [Nerd Fonts](https://www.nerdfonts.com/font-downloads): CaskaydiaMono, Terminess, ComicShanns
+- Maple Mono
+
+If your package manager is apt-get and if you chose zsh
+
+- It set your terminal font to ComicShans nerd font since nerd font support ligatures which are needed for the Powerlevel10k theme that Automator installs.
 
 ## Aliases
 
 Automator add below aliases -
 
-- sc: source your shell config
-- ls: colrols
+- hcat: highlight -O ansi
+- ls: colorls
 - la: colorls -a
+- ll: colorls -l
 - lla: colorls -la
-- pman: sudo pacman -Syu --needed --noconfirm (if you package manager is pacman)
-- pu: paru -Syu --removemake --cleanafter --needed --noconfirm (if you package manager is pacman)
-- z: zoxide for easy directory navigation
-- plugins added for oh-my-zsh or fisher adds their aliases, e.g docker plugin add its aliases
+- If your package manager is pacman
+  - pman: sudo pacman -Syu --needed --noconfirm
+  - pu: paru -Syu --removemake --cleanafter --needed --noconfirm
+  - pm: sudo pacman-mirrors --fasttrack 20 && sudo pacman -Syyu
+  - pma: sudo pacman-mirrors --country all
+- If your package manager is apt-get
+  - ag: sudo apt install -y
+- If you choose to use fish shell
+  - sc: source ~/.config/fish/config.fish
+- If you choose to use zsh shell
+  - sc: source source ~/.zshrc
+- If you choose to use bash shell
+  - sc: source ~/.bashrc
+- z: zoxide for easy directory navigation, added by zoxide
+- plugins added for oh-my-zsh or fisher adds their own aliases, e.g docker plugin add its aliases
 
 ## Execution
 
@@ -117,6 +193,12 @@ Ubuntu with zsh shell
 Ubuntu with warp terminal with fish shell
 ![automator-ubuntu-warp-zsh](/images/automator-ubuntu-fish-warp.png)
 
+Ubuntu with neovim
+![ubuntu-with-neovim](/images/automator-nvim.png)
+
+Ubutu with the tools
+![tools](/images/automator.gif)
+
 ## Issues
 
 Feel free to raise the issues, request new features or contribute to the project.
@@ -124,4 +206,3 @@ Feel free to raise the issues, request new features or contribute to the project
 ## ToDo
 
 1. Test the project on MacOS
-2. Replace GNU stow with chezmoi

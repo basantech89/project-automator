@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 install_prerequisites() {
-  install_pkgs git sudo curl wget gnupg jq xclip vim cowsay lolcat unzip
+  install_pkgs git sudo curl wget gnupg jq xclip vim cowsay lolcat unzip zip
 
   if [ "$package_manager" = 'pacman' ]; then
     install_pkgs bash-completion
@@ -40,6 +40,7 @@ install_prerequisites() {
 
   if [ "$package_manager" = 'pacman' ]; then
     if ! is_pkg_installed snap; then
+      # snap gets installed with paru, hence need to install paru first
       install_pkgs snapd
 
       echo "$SUDO_PASSWORD" | sudo -S systemctl enable --now snapd
